@@ -1,0 +1,592 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using DPScript;
+using System;
+
+public class GameWorldObject : MonoBehaviour
+{
+    public Dictionary<string, scriptEntry> states = new Dictionary<string, scriptEntry>();
+    public Dictionary<string, scriptEntry> subroutines = new Dictionary<string, scriptEntry>();
+    public Dictionary<string, collisionEntry> collisions = new Dictionary<string, collisionEntry>();
+    public Dictionary<int, uponEntry> uponStatements = new Dictionary<int, uponEntry>();
+    public Dictionary<string, StateEntry> stateCancels = new Dictionary<string, StateEntry>();
+
+    public List<string> stateCancelIDs = new List<string>();
+
+    public int idNum;
+    public string idStr;
+
+    DPS_ObjectCommand commands;
+    Battle_Manager battleManager;
+    Camera cameraMain;
+
+    GameObject CollisionChild;
+
+    Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
+    public GameWorldObject player;
+
+    public int curHealth = 1, maxHealth = 1;
+    public int damage = 0, pushBackX = 0, pushbackZ = 0, airPushBackX = 0, airPushBackY = 0, airPushBackZ = 0, attackType = 0, counterType = 0;
+    public int tick = 0, hitstopTick = 0, dir = 1, onStage = 0, scriptPos = 0;
+    public string curState = "", lastState = "", nextState = "";
+    public string curCollision = "", lastCollision = "", lerpCollision = "";
+    public int locX = 0, locY = 0, locZ = 0; 
+    public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
+    public int xImpulseAdd = 0, yImpulseAdd = 0, zImpulseAdd = 0;
+    public bool transferMomentum = false;
+    public float xRotation = 0, yRoatation = 0, zRotation = 0;
+    public float xScale = 1, yScale = 1, zScale = 1;
+    public byte stateType = 0;
+    public bool stateHasHit = false;
+    public int comboCounter = 0;
+    public bool momentumPause = false;
+    public bool rest = false, willRest = false, lerping = false, switchingState = false;
+    public string returnString = "";
+    public int returnInt = 0;
+    public bool faceCamera = true;
+    public bool invincible = false, hitboxesDisabled = false, noCollision = false, ignoreFreezes = false, armor = false;
+    public bool friendlyFire = false; //doesnt work if they are on the same parent
+    public bool isProjectile = false;
+    public bool isPlayer = true, isActive = true;
+    public uint superFreezeTime = 0;
+    public int projectileLevel = 1;
+    public Dictionary<int, byte[]> golbalVariables = new Dictionary<int, byte[]>(), tempVariables = new Dictionary<int, byte[]>();
+    public Dictionary<uint, int> labelPositions = new Dictionary<uint, int>();
+
+    public Dictionary<byte, collisionBox> boxes = new Dictionary<byte, collisionBox>();
+    public Dictionary<byte, collisionChunk> chunks = new Dictionary<byte, collisionChunk>();
+
+    public bool useArmature = false;
+    public List<string> armatureList = new List<string>();
+    public Dictionary<string, Animator> armatures = new Dictionary<string, Animator>();
+    public Dictionary<string, SkinnedMeshRenderer> renderers = new Dictionary<string, SkinnedMeshRenderer>();
+
+    public Dictionary<int, DPS_Stage> world = new Dictionary<int, DPS_Stage>();
+    public List<Object_Collision> loadedCollisions = new List<Object_Collision>();
+
+    public List<string> hitOrBlockCancels = new List<string>(), hitCancels = new List<string>(), blockCancels = new List<string>(), whiffCancels = new List<string>();
+    public List<string> commonCancelableStates = new List<string>(), cancelableStates = new List<string>();
+
+    private PlayerControls playerControls;
+
+    private InputElement currInput = new InputElement(5);
+    private List<InputElement> buffer = new List<InputElement>();
+
+
+    //some various variables for misc stuff
+    public int[] walkSpeed = new int[] { 400, 300 }; //fwalk, bwalk
+    public int[] dashSpeed = new int[] { 600, 40, 820 }; //inital speed, accel, max
+    public int[] airActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
+
+
+    [SerializeField]
+    bool isInDebug = false;
+    [SerializeField]
+    string debugID = "";
+    [SerializeField]
+    bool debugNoLoad = false;
+
+    public bool initalized = false;
+
+    private void Awake()
+    {
+        commands = gameObject.AddComponent<DPS_ObjectCommand>();
+        cameraMain = GameObject.Find("Main Camera").GetComponent<Camera>();
+        //GameObject temp = transform.Find("Meshes").gameObject;
+        playerControls = new PlayerControls();
+
+        for (int i = 0; i < armatureList.Count; i++)
+        {
+            armatures.Add(armatureList[i], transform.Find("Mesh").transform.Find(armatureList[i]).GetComponent<Animator>());
+            armatures[armatureList[i]].speed = 0.005f;
+            renderers.Add(armatureList[i], transform.Find("Mesh").transform.Find(armatureList[i]).GetComponentInChildren<SkinnedMeshRenderer>());
+        }
+
+        Application.targetFrameRate = 60;
+
+        battleManager = GameObject.Find("BattleManager").GetComponent<Battle_Manager>();
+        for (int i = 0; i < battleManager.stages.Count; i++)
+            world.Add(battleManager.stages[i].id, battleManager.stages[i]);
+
+        CollisionChild = transform.Find("Collision").gameObject;
+
+
+        if (debugNoLoad)
+            return;
+
+        if (isInDebug)
+        {
+            Objects_Load tempLoad = new Objects_Load();
+            tempLoad.mainLoad("Char/" + debugID + "/" + debugID + "_load", this, debugID, true);
+        }
+    }
+
+    private void OnEnable()
+    {
+        playerControls.Enable();
+    }
+
+    private void OnDisable()
+    {
+        playerControls.Disable();
+    }
+
+    private void Update()
+    {
+        //if (!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
+        //  return;
+        //input_DebugBuffer();
+        if(!initalized)
+        {
+            commands.callSubroutine("init");
+            player = this;
+            initalized = true;
+            return;
+        }
+
+        if (debugNoLoad)
+            return;
+
+        positionUpdate();
+        rotateToCamera();
+        scaleUpdate();
+
+        inputUpdate();
+
+
+        if (hitstopTick == 0 && !ignoreFreezes)
+        {
+            tick--;
+            activateUpon(3);
+        }
+        else
+            hitstopTick--;
+        if(tick <= 0)
+        {
+            lerping = false;
+            willRest = false;
+            rest = false;
+
+            /*
+            tempSpriteNum++;
+            if (tempSpriteNum > 11)
+                tempSpriteNum = 0;
+            curCollision = tempStateNam + tempSpriteNum;
+            tick = 9;
+            */
+
+            while (!rest)
+            {
+                switchingState = false;
+                commands.objSwitchCase(states[curState].commands[scriptPos]);
+                if (switchingState)
+                    continue;
+                if(!rest || states[curState].commands[scriptPos].id == 3)
+                    scriptPos++;
+            }
+
+            activateUpon(4);
+
+
+            if (curCollision != lastCollision)
+            {
+                switchSprite();
+
+                if (collisions.ContainsKey(lastCollision))
+                    for (int i = 0; i < collisions[lastCollision].boxCount; i++)
+                        loadedCollisions[0].kill();
+
+                if(collisions.ContainsKey(curCollision))
+                for (int i = 0; i < collisions[curCollision].boxCount; i++)
+                {
+                    Object_Collision temp = CollisionChild.AddComponent<Object_Collision>();
+                    temp.init(collisions[curCollision].boxes[i], collisions[curCollision].hasZ,
+                        collisions[curCollision].sphere, this, this, battleManager);
+                    loadedCollisions.Add(temp);
+                    battleManager.collisions.Add(temp);
+                    //Debug.Log(i);
+                }
+
+                
+            }
+
+            /*
+            if (lerping)
+                if (collisions.ContainsKey(lerpCollision))
+                    lerpSprite();
+            */
+        }
+
+        if (!isPlayer)
+            return;
+        if (!isActive)
+            return;
+
+        
+    }
+
+    private void switchSprite()
+    {
+        if(useArmature)
+        {
+            string state = collisions[curCollision].sprites[0].Remove(collisions[curCollision].sprites[0].LastIndexOf("_"));
+            //Debug.Log(state);
+            int frame = Int32.Parse(collisions[curCollision].sprites[0].Remove(0, collisions[curCollision].sprites[0].LastIndexOf("_") + 1));
+            //Debug.Log(frame);
+            var stateId = Animator.StringToHash(state);
+            for (int i = 0; i < armatureList.Count; i++)
+            {
+                if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
+                {
+                    armatures[armatureList[i]].Play(state, 0, (float)frame / 570 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
+                        2 / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.frameRate));
+                    if (!lerping)
+                        armatures[armatureList[i]].speed = 0f;
+                    else
+                        armatures[armatureList[i]].speed = 1;
+                }
+
+            }
+        }
+    }
+
+    private void lerpSprite()
+    {
+        if(useArmature)
+        {
+            string state = collisions[lerpCollision].sprites[0].Remove(collisions[lerpCollision].sprites[0].LastIndexOf("_"));
+            int frame = Int32.Parse(collisions[lerpCollision].sprites[0].Remove(0, collisions[lerpCollision].sprites[0].LastIndexOf("_") + 1));
+
+            var stateId = Animator.StringToHash(state);
+            for (int i = 0; i < armatureList.Count; i++)
+            {
+                if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
+                {
+                    //armatures[armatureList[i]].CrossFade(stateId, )
+                }
+            }
+        }
+    }
+
+    private void rotateToCamera()
+    {
+        if (faceCamera)
+        { 
+            transform.LookAt(cameraMain.transform);
+            transform.localEulerAngles = new Vector3(xRotation, transform.localEulerAngles.y+180+yRoatation, zRotation);
+        }
+        else
+            transform.localEulerAngles = new Vector3(xRotation, yRoatation, zRotation);
+    }
+
+    private void positionUpdate()
+    {
+        //if(!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
+        //return;
+        if (!momentumPause)
+        {
+            locX += xImpulse * dir; locY += yImpulse * dir; locZ += zImpulse * dir;
+            xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
+        }
+
+        if(locY <= 0)
+        {
+            locY = 0;
+            yImpulse = 0;
+            yImpulseAdd = 0;
+            activateUpon(2);
+        }
+
+        Vector3 worldPos = world[onStage].transform.position;
+        transform.position = new Vector3(((float)locX / 10000) + worldPos.x, ((float)locY / 10000) + worldPos.y, ((float)locZ / 10000) + worldPos.z);
+    }
+
+    private void scaleUpdate()
+    {
+        transform.localScale = new Vector3(xScale * dir, yScale, zScale);
+    }
+
+    private void activateUpon(int type)
+    {
+        if (uponStatements.ContainsKey(type))
+            for (int i = 0; i < uponStatements[type].commands.Count; i++)
+                commands.objSwitchCase(uponStatements[type].commands[i]);
+    }
+
+    public void boxesCollide(Object_Collision child, Object_Collision hit)
+    {
+        switch(child.box.type)
+        {
+            case 1:
+                Debug.Log("Child is hurtbox");
+                break;
+            default:
+                Debug.Log("Child is type " + child.box.type);
+                break;
+        }
+
+
+    }
+
+    public class InputElement
+    {
+        public byte inputType;
+        public string button;
+        public uint updateCount = 0;
+        public uint chargeTime = 0;
+
+        public InputElement(byte _inputType)
+        {
+            inputType = _inputType;
+        }
+    }
+
+    private void inputUpdate()
+    {
+        inputs_AddToBuffer();
+
+        //buffer update
+        if (buffer.Count > 0)
+        {
+            while (buffer.Count > 15)
+            {
+                buffer.RemoveAt(0);
+            }
+
+            for (int i = 0; i < buffer.Count; i++)
+            {
+                buffer[i].updateCount++;
+
+                if (buffer[i].updateCount == 60)
+                {
+                    buffer.RemoveAt(i);
+                }
+            }
+        }
+
+        bool hasEnteredState = false;
+
+        if (!hasEnteredState)
+            for (int i = 0; i < commonCancelableStates.Count; i++)
+            {
+                if (!stateCancels.ContainsKey(commonCancelableStates[i]))
+                    continue;
+                StateEntry entry = stateCancels[commonCancelableStates[i]];
+                if (stateType != entry.type)
+                    continue;
+                if (input_CanInput(entry.input, entry.button, entry.leniantInput,
+                    entry.holdBuffer))
+                {
+                    commands.enterState(entry.name);
+                    hasEnteredState = true;
+                    break;
+                }
+            }
+
+        if (!hasEnteredState)
+            for (int i = 0; i < cancelableStates.Count; i++)
+            {
+                if (!stateCancels.ContainsKey(cancelableStates[i]))
+                    continue;
+                StateEntry entry = stateCancels[cancelableStates[i]];
+                if (stateType != entry.type)
+                    continue;
+                //Debug.Log("Swag");
+                //Debug.Log(entry.input + ", " + entry.button);
+                if (input_CanInput(entry.input, entry.button, entry.leniantInput,
+                    entry.holdBuffer))
+                {
+                    //Debug.Log("boom");
+                    commands.enterState(entry.name);
+                    hasEnteredState = true;
+                    break;
+                }
+            }
+    }
+
+    private void inputs_AddToBuffer()
+    {
+        InputElement _input = new InputElement(5);
+        if (buffer.Count > 0) _input.inputType = buffer[buffer.Count - 1].inputType;
+
+        Vector2 directions = playerControls.Player.Directions.ReadValue<Vector2>();
+
+        if (directions[1] <= -0.5 && directions[0] <= -0.5)
+        { _input.inputType = 1; currInput.inputType = 1; }
+        else if (directions[1] <= -0.5 && directions[0] >= 0.5)
+        { _input.inputType = 3; currInput.inputType = 3; }
+        else if (directions[1] >= 0.5 && directions[0] <= -0.5)
+        { _input.inputType = 7; currInput.inputType = 7; }
+        else if (directions[1] >= 0.5 && directions[0] >= 0.5)
+        { _input.inputType = 9; currInput.inputType = 9; }
+        else if (directions[1] <= -0.5)
+        { _input.inputType = 2; currInput.inputType = 2; }
+        else if (directions[1] >= 0.5)
+        { _input.inputType = 8; currInput.inputType = 8; }
+        else if (directions[0] <= -0.5)
+        { _input.inputType = 4; currInput.inputType = 4; }
+        else if (directions[0] >= 0.5)
+        { _input.inputType = 6; currInput.inputType = 6; }
+        else
+        { _input.inputType = 5; currInput.inputType = 5; }
+
+        string _but = "";
+
+
+        if (playerControls.Player.Action_A.IsPressed() && !_but.Contains("A")) _but += "A";
+        if (playerControls.Player.Action_B.IsPressed() && !_but.Contains("B")) _but += "B";
+        if (playerControls.Player.Action_C.IsPressed() && !_but.Contains("C")) _but += "C";
+        if (playerControls.Player.Action_D.IsPressed() && !_but.Contains("D")) _but += "D";
+
+        if (playerControls.Player.Action_ABCD.IsPressed()) _but = "ABCD";
+
+
+
+        _input.button = _but;
+        currInput.button = _but;
+
+        if (buffer.Count > 0)
+        {
+            if (buffer[buffer.Count - 1].inputType == _input.inputType &&
+                buffer[buffer.Count - 1].button == _input.button)
+            {
+                buffer[buffer.Count - 1].updateCount = 0;
+                buffer[buffer.Count - 1].chargeTime++;
+                return;
+            }
+        }
+        buffer.Add(_input);
+    }
+
+    private void input_DebugBuffer()
+    {
+        string retrn = "";
+
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            retrn += buffer[i].inputType;
+            retrn += ": ";
+            retrn += buffer[i].button;
+            retrn += ", ";
+        }
+
+        Debug.Log(retrn);
+    }
+
+    InputSwitchCase inputTypeSwitchCase = new InputSwitchCase();
+
+    private bool input_CanInput(short type, string _button, byte lieniant, 
+        byte holdBuffer)
+    {
+        if (holdBuffer > currInput.chargeTime)
+            return false;
+
+
+        if (!String.IsNullOrEmpty(_button))
+            if (!currInput.button.Contains(_button)) return false;
+
+        if (type == 0)
+            type = 5;
+
+        byte[] _input;
+        if (type < 10)
+            _input = new byte[] { (byte)type };
+        else 
+            _input = inputTypeSwitchCase.switchCase(type);
+
+        if(dir <= -1)
+            //reverse inputs if turned around
+            for(int i = 0; i < _input.Length; i++)
+                switch(_input[i])
+                {
+                    case 1:
+                        _input[i] = 3;
+                        break;
+                    case 3:
+                        _input[i] = 1;
+                        break;
+                    case 4:
+                        _input[i] = 6;
+                        break;
+                    case 6:
+                        _input[i] = 4;
+                        break;
+                    case 7:
+                        _input[i] = 9;
+                        break;
+                    case 9:
+                        _input[i] = 7;
+                        break;
+                }
+
+        if (_input.Length != 0)
+        {
+            if (_input.Length == 1 && lieniant == 0)
+            {
+                if (_input[0] == 5 && (currInput.inputType == 5 ||
+                    currInput.inputType == 4 || currInput.inputType == 6)) return true;
+                else if (_input[0] == 2 && (currInput.inputType == 2 ||
+                    currInput.inputType == 1 || currInput.inputType == 3)) return true;
+                else if (_input[0] == 8 && (currInput.inputType == 8 ||
+                    currInput.inputType == 7 || currInput.inputType == 9)) return true;
+            }
+            else if (currInput.inputType != _input[_input.Length - 1]) return false;
+        }
+
+        int startBuf = 0;
+        for (int i = 0; i < buffer.Count; i++)
+        {
+            if (buffer[i].inputType == _input[0])
+            {
+                startBuf = i;
+                break;
+            }
+        }
+
+        if (_input.Length == 0) return true;
+        if (buffer.Count >= _input.Length)
+        {
+            if (_input.Length == 1) return true;
+            else if (_input.Length == 2)
+            {
+                if (buffer[startBuf].inputType == _input[0] && buffer[startBuf + 1].inputType == 5 &&
+                    buffer[startBuf + 2].inputType == _input[1]) return true;
+            }
+            else
+            {
+                bool multiTap = false;
+                for (int i = 0; i < _input.Length - 1; i++)
+                {
+                    if (_input[i] != _input[i + 1]) { multiTap = false; break; }
+                    multiTap = true;
+                }
+
+                int taps = 0;
+                if (multiTap)
+                {
+                    for (int i = startBuf; i < buffer.Count; i++)
+                    {
+                        if (taps >= _input.Length) break;
+                        if (buffer[i].inputType == _input[taps]) taps++;
+                        else if (buffer[i].inputType != 5) break;
+                    }
+                }
+                else
+                {
+                    int misInput = _input.Length - 4;
+                    for (int i = startBuf; i < buffer.Count; i++)
+                    {
+                        if (taps >= _input.Length) break;
+                        if (buffer[i].inputType == _input[taps]) taps++;
+                        else if (misInput > 0) misInput--;
+                        else break;
+                    }
+                }
+                if (taps >= _input.Length) return true;
+            }
+        }
+        return false;
+    }
+}
