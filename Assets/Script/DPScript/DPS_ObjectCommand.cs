@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 namespace DPScript
 {
@@ -11,13 +12,14 @@ namespace DPScript
         GameWorldObject o;
         [SerializeField]
         GameWorldObject p;
+        [SerializeField]
+        GameWorldObject owner;
 
-        private bool ifFailed = false;
-        private bool canElse = false;
 
         public void Start()
         {
             o = gameObject.GetComponent<GameWorldObject>();
+            owner = o;
             p = o.player;
         }
 
@@ -27,6 +29,11 @@ namespace DPScript
         {
             if (p == null)
                 p = o.player;
+            if (isInUpon)
+            {
+                uponCode.commands.Add(com);
+                return;
+            }
             if (ifFailed && com.id != 17)
                 return;
 
@@ -56,26 +63,51 @@ namespace DPScript
                 case 8:
                     callSubroutine(com.stringArgs[0]);
                     break;
+
                 case 12:
                     ifCom(com);
                     break;
                 case 13:
-                    elseCom();
+                    if (canElse)
+                        elseCom();
+                    else
+                        ifFailed = true;
                     break;
                 case 14:
-                    elseIf(com);
+                    if (canElse)
+                        elseIf(com);
+                    else
+                        ifFailed = true;
                     break;
                 case 15:
                     ifNot(com);
                     break;
                 case 16:
-                    elseIfNot(com);
+                    if (canElse)
+                        elseIfNot(com);
+                    else
+                        ifFailed = true;
                     break;
                 case 17:
                     endIf();
                     break;
                 case 18:
                     o.returnInt = randomNum(com.intArgs[0], com.intArgs[1]);
+                    break;
+                case 19:
+                    createVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
+                    break;
+                case 20:
+                    editVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
+                    break;
+                case 24:
+                    o.returnInt = Convert.ToInt32(o.input_CanInput(com.byteArgs[0], "", 0, 0));
+                    break;
+                case 30:
+                    upon(com.byteArgs[0]);
+                    break;
+                case 31:
+                    uponEnd();
                     break;
                 case 40:
                     physicsXImpulse(com.byteArgs[0], com.intArgs[0]);
@@ -94,6 +126,15 @@ namespace DPScript
                     break;
                 case 45:
                     yImpulseModifier(com.byteArgs[0], com.intArgs[0]);
+                    break;
+                case 46:
+                    addPosX(com.byteArgs[0], com.intArgs[0]);
+                    break;
+                case 47:
+                    addPosY(com.byteArgs[0], com.intArgs[0]);
+                    break;
+                case 48:
+                    addPosZ(com.byteArgs[0], com.intArgs[0]);
                     break;
                 case 100:
                     stateRegister(com.stringArgs[0]);
@@ -132,6 +173,27 @@ namespace DPScript
                     break;
                 case 114:
                     addSuperCancels();
+                    break;
+                case 119:
+                    removeCancel(com.stringArgs[0]);
+                    break;
+                case 120:
+                    setStateType(com.byteArgs[0]);
+                    break;
+                case 121:
+                    setNextState(com.stringArgs[0]);
+                    break;
+                case 122:
+                    setLandingState(com.stringArgs[0]);
+                    break;
+                case 123:
+                    transferMomentum(com.boolArgs[0]);
+                    break;
+                case 124:
+                    pauseMomentum(com.boolArgs[0]);
+                    break;
+                case 125:
+                    exitState();
                     break;
             }
         }
@@ -175,7 +237,7 @@ namespace DPScript
             }
         }
 
-        void rest()
+        public void rest()
         {
             o.rest = true;
         }
@@ -217,13 +279,13 @@ namespace DPScript
             o.cancelableStates.Clear();
             o.whiffCancels.Clear();
             o.cancelableStates.Clear();
-            o.commonCancelableStates.Clear();
             o.stateHasHit = false;
             o.hitboxesDisabled = false;
             o.invincible = false;
             o.scriptPos = 0;
             o.tick = 0;
             o.labelPositions.Clear();
+            o.tempVariables.Clear();
             if(!o.transferMomentum)
             {
                 o.xImpulse = 0;
@@ -233,10 +295,16 @@ namespace DPScript
                 o.yImpulseAdd = 0;
                 o.zImpulseAdd = 0;
             }
+            o.transferMomentum = false;
+            o.momentumPause = false;
+            o.landToState = false;
             o.willRest = false;
             o.switchingState = true;
             o.lastState = o.curState;
             o.curState = state;
+
+            if (o.stateCancels[state].common > 0)
+                cmnSubroutine(state);
         }
 
         void createObject(string state, byte type, int offsetX, int offsetY)
@@ -257,9 +325,30 @@ namespace DPScript
             
         }
 
-        public void createVar(byte table, byte[] variable)
+        public void cmnSubroutine(string sub)
         {
+            if (o.commonSubroutines.ContainsKey(sub))
+                for (int i = 0; i < o.commonSubroutines[sub].commands.Count; i++)
+                    objSwitchCase(o.commonSubroutines[sub].commands[i]);
+        }
 
+        public void createVar(byte table, int id, int data)
+        {
+            if (table == 0)
+                o.globalVariables.Add(id, data);
+            else
+                o.tempVariables.Add(id, data);
+        }
+
+        public void editVar(byte table, int id, int data)
+        {
+            if (table == 0)
+                if (id <= 16)
+                    return;
+                else
+                    o.globalVariables[id] = data;
+            else
+                o.tempVariables[id] = data;
         }
 
         public int randomNum(int min, int max)
@@ -272,32 +361,146 @@ namespace DPScript
 
         public void physicsXImpulse(byte type, int amount)
         {
-            o.xImpulse = amount;
+            switch (type)
+            {
+                case 3:
+                    o.xImpulse = amount;
+                    break;
+                case 0:
+                    o.xImpulse = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.xImpulse = o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void physicsYImpulse(byte type, int amount)
         {
-            o.yImpulse = amount;
+            switch (type)
+            {
+                case 3:
+                    o.yImpulse = amount;
+                    break;
+                case 0:
+                    o.yImpulse = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.yImpulse = o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void physicsZImpulse(byte type, int amount)
         {
-            o.zImpulse = amount;
+            switch (type)
+            {
+                case 3:
+                    o.zImpulse = amount;
+                    break;
+                case 0:
+                    o.zImpulse = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.zImpulse = o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void xImpulseModifier(byte type, int amount)
         {
-            o.xImpulseAdd = amount;
+            switch(type)
+            {
+                case 3:
+                    o.xImpulseAdd = amount;
+                    break;
+                case 0:
+                    o.xImpulseAdd = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.xImpulseAdd = o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void yImpulseModifier(byte type, int amount)
         {
-            o.yImpulseAdd = amount;
+            switch (type)
+            {
+                case 3:
+                    o.yImpulseAdd = amount;
+                    break;
+                case 0:
+                    o.yImpulseAdd = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.yImpulseAdd = o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void zImpulseModifier(byte type, int amount)
         {
-            o.xImpulseAdd = amount;
+            switch (type)
+            {
+                case 3:
+                    o.zImpulseAdd = amount;
+                    break;
+                case 0:
+                    o.zImpulseAdd = o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.zImpulseAdd = o.globalVariables[amount];
+                    break;
+            }
+        }
+
+        public void addPosX(byte type, int amount)
+        {
+            switch (type)
+            {
+                case 3:
+                    o.locX += amount;
+                    break;
+                case 0:
+                    o.locX += o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.locX += o.globalVariables[amount];
+                    break;
+            }
+        }
+
+        public void addPosY(byte type, int amount)
+        {
+            switch (type)
+            {
+                case 3:
+                    o.locY += amount;
+                    break;
+                case 0:
+                    o.locY += o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.locY += o.globalVariables[amount];
+                    break;
+            }
+        }
+
+        public void addPosZ(byte type, int amount)
+        {
+            switch (type)
+            {
+                case 3:
+                    o.locZ += amount;
+                    break;
+                case 0:
+                    o.locZ += o.tempVariables[amount];
+                    break;
+                case 1:
+                    o.locZ += o.globalVariables[amount];
+                    break;
+            }
         }
 
         public void addCancel(string state)
@@ -312,9 +515,8 @@ namespace DPScript
             for(int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 3 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]))
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
-
             }
         }
 
@@ -323,9 +525,8 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 0 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]))
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
-
             }
         }
 
@@ -334,9 +535,8 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 1 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]))
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
-
             }
         }
 
@@ -345,15 +545,53 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 2 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]))
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
-
             }
+        }
+
+        public void removeCancel(string state)
+        {
+            o.cancelableStates.Remove(state);
+        }
+
+        public void setStateType(byte type)
+        {
+            o.stateType = type;
+        }    
+
+        public void setNextState(string state)
+        {
+            o.nextState = state;
+        }
+
+        public void setLandingState(string state)
+        {
+            o.landingState = state;
+            o.landToState = true;
+        }
+
+        public void transferMomentum(bool b)
+        {
+            o.transferMomentum = b;
+        }
+
+        public void pauseMomentum(bool b)
+        {
+            o.momentumPause = b;
+        }
+
+        public void exitState()
+        {
+            enterState(o.nextState);
         }
 
         #endregion
 
         #region ifCommands
+
+        private bool ifFailed = false;
+        private bool canElse = false;
 
         void ifCom(scriptCommand com)
         {
@@ -373,10 +611,10 @@ namespace DPScript
                 switch(com.byteArgs[0])
                 {
                     case 0:
-                        checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
                         break;
                     case 1:
-                        checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
                         break;
                 }
             }
@@ -390,12 +628,46 @@ namespace DPScript
 
         void elseCom()
         {
+            if (!canElse && ifFailed)
+                return;
 
+            canElse = false;
         }
 
         void elseIf(scriptCommand com)
         {
+            if (!canElse && ifFailed)
+                return;
 
+            bool callCom = false;
+            if (com.byteArgs[0] == 2)
+                callCom = true;
+
+            int checkNum = 0;
+
+            if (callCom)
+            {
+                objSwitchCase(com.commands[0]);
+                checkNum = o.returnInt;
+            }
+            else
+            {
+                switch (com.byteArgs[0])
+                {
+                    case 0:
+                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        break;
+                    case 1:
+                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        break;
+                }
+            }
+
+            if (checkNum! > 0)
+            {
+                ifFailed = true;
+                canElse = true;
+            }
         }
 
         void ifNot(scriptCommand com)
@@ -419,10 +691,10 @@ namespace DPScript
                 switch (com.byteArgs[0])
                 {
                     case 0:
-                        checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
                         break;
                     case 1:
-                        checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
                         break;
                 }
             }
@@ -437,7 +709,38 @@ namespace DPScript
 
         void elseIfNot(scriptCommand com)
         {
+            if (!canElse && ifFailed)
+                return;
 
+            bool callCom = false;
+            if (com.byteArgs[0] == 2)
+                callCom = true;
+
+            int checkNum = 0;
+
+            if (callCom)
+            {
+                objSwitchCase(com.commands[0]);
+                checkNum = o.returnInt;
+            }
+            else
+            {
+                switch (com.byteArgs[0])
+                {
+                    case 0:
+                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        break;
+                    case 1:
+                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        break;
+                }
+            }
+
+            if (checkNum! > 0)
+            {
+                ifFailed = true;
+                canElse = true;
+            }
         }
 
         void endIf()
@@ -457,13 +760,14 @@ namespace DPScript
         }
 
         public void stateConditions(byte stateType, byte usibility, byte lienant, byte attackType,
-            byte holdBuffer, byte arg6, byte arg7)
+            byte holdBuffer, byte common, byte arg7)
         {
             entryAdd.type = stateType;
             entryAdd.useableIn = usibility;
             entryAdd.leniantInput = lienant;
             entryAdd.attackType = attackType;
             entryAdd.holdBuffer = holdBuffer;
+            entryAdd.common = common;
         }
 
         public void stateInput(byte input)
@@ -505,6 +809,27 @@ namespace DPScript
         {
             o.stateCancels.Add(entryAdd.name, entryAdd);
             o.stateCancelIDs.Insert(0, entryAdd.name);
+        }
+
+        #endregion
+
+        #region upon
+
+
+        private uponEntry uponCode;
+        private bool isInUpon;
+
+        private void upon(byte type)
+        {
+            uponCode = new uponEntry();
+            uponCode.type = type;
+            isInUpon = true;
+        }
+
+        private void uponEnd()
+        {
+            o.uponStatements.Add(uponCode.type, uponCode);
+            isInUpon = false;
         }
 
         #endregion

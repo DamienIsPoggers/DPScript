@@ -82,9 +82,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Action_DebugSwitchPlayer"",
+                    ""name"": ""Action_E"",
                     ""type"": ""Button"",
-                    ""id"": ""89c7997b-d41c-4356-a59a-bc069ecde2cf"",
+                    ""id"": ""d18739c5-87f8-46b8-ab66-db17c9d125e4"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -358,12 +358,23 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""7bcda857-9620-4807-9e7a-2b87326eef45"",
-                    ""path"": ""<Keyboard>/n"",
+                    ""id"": ""fc9fe873-3153-4953-bab1-c466eca89a29"",
+                    ""path"": ""<Keyboard>/o"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Action_DebugSwitchPlayer"",
+                    ""action"": ""Action_E"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""739bc90e-1564-4209-9292-75d10750a205"",
+                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Action_E"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -380,7 +391,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Player_Action_C = m_Player.FindAction("Action_C", throwIfNotFound: true);
         m_Player_Action_D = m_Player.FindAction("Action_D", throwIfNotFound: true);
         m_Player_Action_ABCD = m_Player.FindAction("Action_ABCD", throwIfNotFound: true);
-        m_Player_Action_DebugSwitchPlayer = m_Player.FindAction("Action_DebugSwitchPlayer", throwIfNotFound: true);
+        m_Player_Action_E = m_Player.FindAction("Action_E", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -446,7 +457,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Action_C;
     private readonly InputAction m_Player_Action_D;
     private readonly InputAction m_Player_Action_ABCD;
-    private readonly InputAction m_Player_Action_DebugSwitchPlayer;
+    private readonly InputAction m_Player_Action_E;
     public struct PlayerActions
     {
         private @PlayerControls m_Wrapper;
@@ -457,7 +468,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         public InputAction @Action_C => m_Wrapper.m_Player_Action_C;
         public InputAction @Action_D => m_Wrapper.m_Player_Action_D;
         public InputAction @Action_ABCD => m_Wrapper.m_Player_Action_ABCD;
-        public InputAction @Action_DebugSwitchPlayer => m_Wrapper.m_Player_Action_DebugSwitchPlayer;
+        public InputAction @Action_E => m_Wrapper.m_Player_Action_E;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -485,9 +496,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @Action_ABCD.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_ABCD;
                 @Action_ABCD.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_ABCD;
                 @Action_ABCD.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_ABCD;
-                @Action_DebugSwitchPlayer.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_DebugSwitchPlayer;
-                @Action_DebugSwitchPlayer.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_DebugSwitchPlayer;
-                @Action_DebugSwitchPlayer.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_DebugSwitchPlayer;
+                @Action_E.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_E;
+                @Action_E.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_E;
+                @Action_E.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAction_E;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -510,9 +521,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @Action_ABCD.started += instance.OnAction_ABCD;
                 @Action_ABCD.performed += instance.OnAction_ABCD;
                 @Action_ABCD.canceled += instance.OnAction_ABCD;
-                @Action_DebugSwitchPlayer.started += instance.OnAction_DebugSwitchPlayer;
-                @Action_DebugSwitchPlayer.performed += instance.OnAction_DebugSwitchPlayer;
-                @Action_DebugSwitchPlayer.canceled += instance.OnAction_DebugSwitchPlayer;
+                @Action_E.started += instance.OnAction_E;
+                @Action_E.performed += instance.OnAction_E;
+                @Action_E.canceled += instance.OnAction_E;
             }
         }
     }
@@ -525,6 +536,6 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         void OnAction_C(InputAction.CallbackContext context);
         void OnAction_D(InputAction.CallbackContext context);
         void OnAction_ABCD(InputAction.CallbackContext context);
-        void OnAction_DebugSwitchPlayer(InputAction.CallbackContext context);
+        void OnAction_E(InputAction.CallbackContext context);
     }
 }

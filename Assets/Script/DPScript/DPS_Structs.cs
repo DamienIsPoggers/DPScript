@@ -124,6 +124,7 @@ namespace DPScript
         public byte leniantInput = 0;
         public byte attackType = 0;
         public byte holdBuffer = 0;
+        public byte common = 0;
 
         public bool useSubroutine = false;
         public string subroutine;

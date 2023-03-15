@@ -8,7 +8,9 @@ using System;
 public class GameWorldObject : MonoBehaviour
 {
     public Dictionary<string, scriptEntry> states = new Dictionary<string, scriptEntry>();
+    public Dictionary<string, scriptEntry> commonStates = new Dictionary<string, scriptEntry>();
     public Dictionary<string, scriptEntry> subroutines = new Dictionary<string, scriptEntry>();
+    public Dictionary<string, scriptEntry> commonSubroutines = new Dictionary<string, scriptEntry>();
     public Dictionary<string, collisionEntry> collisions = new Dictionary<string, collisionEntry>();
     public Dictionary<int, uponEntry> uponStatements = new Dictionary<int, uponEntry>();
     public Dictionary<string, StateEntry> stateCancels = new Dictionary<string, StateEntry>();
@@ -30,7 +32,8 @@ public class GameWorldObject : MonoBehaviour
     public int curHealth = 1, maxHealth = 1;
     public int damage = 0, pushBackX = 0, pushbackZ = 0, airPushBackX = 0, airPushBackY = 0, airPushBackZ = 0, attackType = 0, counterType = 0;
     public int tick = 0, hitstopTick = 0, dir = 1, onStage = 0, scriptPos = 0;
-    public string curState = "", lastState = "", nextState = "";
+    public string curState = "", lastState = "", nextState = "", landingState = "";
+    public bool landToState = false;
     public string curCollision = "", lastCollision = "", lerpCollision = "";
     public int locX = 0, locY = 0, locZ = 0; 
     public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
@@ -52,7 +55,7 @@ public class GameWorldObject : MonoBehaviour
     public bool isPlayer = true, isActive = true;
     public uint superFreezeTime = 0;
     public int projectileLevel = 1;
-    public Dictionary<int, byte[]> golbalVariables = new Dictionary<int, byte[]>(), tempVariables = new Dictionary<int, byte[]>();
+    public Dictionary<int, int> globalVariables = new Dictionary<int, int>(), tempVariables = new Dictionary<int, int>();
     public Dictionary<uint, int> labelPositions = new Dictionary<uint, int>();
 
     public Dictionary<byte, collisionBox> boxes = new Dictionary<byte, collisionBox>();
@@ -67,7 +70,7 @@ public class GameWorldObject : MonoBehaviour
     public List<Object_Collision> loadedCollisions = new List<Object_Collision>();
 
     public List<string> hitOrBlockCancels = new List<string>(), hitCancels = new List<string>(), blockCancels = new List<string>(), whiffCancels = new List<string>();
-    public List<string> commonCancelableStates = new List<string>(), cancelableStates = new List<string>();
+    public List<string> cancelableStates = new List<string>();
 
     private PlayerControls playerControls;
 
@@ -76,9 +79,11 @@ public class GameWorldObject : MonoBehaviour
 
 
     //some various variables for misc stuff
-    public int[] walkSpeed = new int[] { 400, 300 }; //fwalk, bwalk
+    public int[] walkingSpeed = new int[] { 400, -300 }; //fwalk, bwalk
     public int[] dashSpeed = new int[] { 600, 40, 820 }; //inital speed, accel, max
     public int[] airActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
+    public int[] jumpSpeed = new int[] { 500, -500, 1900 }; //fspeed, bspeed, height
+    public int defaultGravity = -90;
 
 
     [SerializeField]
@@ -112,7 +117,6 @@ public class GameWorldObject : MonoBehaviour
 
         CollisionChild = transform.Find("Collision").gameObject;
 
-
         if (debugNoLoad)
             return;
 
@@ -141,7 +145,10 @@ public class GameWorldObject : MonoBehaviour
         if(!initalized)
         {
             commands.callSubroutine("init");
+            commands.cmnSubroutine("cmnInit");
+            commands.enterState("CmnStand");
             player = this;
+            addGlobalVariables();
             initalized = true;
             return;
         }
@@ -180,11 +187,15 @@ public class GameWorldObject : MonoBehaviour
             while (!rest)
             {
                 switchingState = false;
+                if (scriptPos + 1 > states[curState].commands.Count)
+                { commands.enterState(nextState); continue; }
                 commands.objSwitchCase(states[curState].commands[scriptPos]);
                 if (switchingState)
                     continue;
-                if(!rest || states[curState].commands[scriptPos].id == 3)
+                if (!rest || states[curState].commands[scriptPos].id == 3)
                     scriptPos++;
+                if (scriptPos + 1 > states[curState].commands.Count)
+                    break;
             }
 
             activateUpon(4);
@@ -285,6 +296,8 @@ public class GameWorldObject : MonoBehaviour
     {
         //if(!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
         //return;
+        transform.parent = world[onStage].transform;
+        
         if (!momentumPause)
         {
             locX += xImpulse * dir; locY += yImpulse * dir; locZ += zImpulse * dir;
@@ -297,10 +310,11 @@ public class GameWorldObject : MonoBehaviour
             yImpulse = 0;
             yImpulseAdd = 0;
             activateUpon(2);
+            if(landToState)
+                commands.enterState(landingState);
         }
 
-        Vector3 worldPos = world[onStage].transform.position;
-        transform.position = new Vector3(((float)locX / 10000) + worldPos.x, ((float)locY / 10000) + worldPos.y, ((float)locZ / 10000) + worldPos.z);
+        transform.localPosition = new Vector3((float)locX / 10000, (float)locY / 10000, (float)locZ / 10000);
     }
 
     private void scaleUpdate()
@@ -366,44 +380,23 @@ public class GameWorldObject : MonoBehaviour
             }
         }
 
-        bool hasEnteredState = false;
-
-        if (!hasEnteredState)
-            for (int i = 0; i < commonCancelableStates.Count; i++)
+        for (int i = 0; i < cancelableStates.Count; i++)
+        {
+            if (!stateCancels.ContainsKey(cancelableStates[i]))
+                continue;
+            StateEntry entry = stateCancels[cancelableStates[i]];
+            if (stateType != entry.type)
+                continue;
+            //Debug.Log("Swag");
+            //Debug.Log(entry.input + ", " + entry.button);
+            if (input_CanInput(entry.input, entry.button, entry.leniantInput,
+                entry.holdBuffer))
             {
-                if (!stateCancels.ContainsKey(commonCancelableStates[i]))
-                    continue;
-                StateEntry entry = stateCancels[commonCancelableStates[i]];
-                if (stateType != entry.type)
-                    continue;
-                if (input_CanInput(entry.input, entry.button, entry.leniantInput,
-                    entry.holdBuffer))
-                {
-                    commands.enterState(entry.name);
-                    hasEnteredState = true;
-                    break;
-                }
+                //Debug.Log("boom");
+                commands.enterState(entry.name);
+                break;
             }
-
-        if (!hasEnteredState)
-            for (int i = 0; i < cancelableStates.Count; i++)
-            {
-                if (!stateCancels.ContainsKey(cancelableStates[i]))
-                    continue;
-                StateEntry entry = stateCancels[cancelableStates[i]];
-                if (stateType != entry.type)
-                    continue;
-                //Debug.Log("Swag");
-                //Debug.Log(entry.input + ", " + entry.button);
-                if (input_CanInput(entry.input, entry.button, entry.leniantInput,
-                    entry.holdBuffer))
-                {
-                    //Debug.Log("boom");
-                    commands.enterState(entry.name);
-                    hasEnteredState = true;
-                    break;
-                }
-            }
+        }
     }
 
     private void inputs_AddToBuffer()
@@ -439,6 +432,7 @@ public class GameWorldObject : MonoBehaviour
         if (playerControls.Player.Action_B.IsPressed() && !_but.Contains("B")) _but += "B";
         if (playerControls.Player.Action_C.IsPressed() && !_but.Contains("C")) _but += "C";
         if (playerControls.Player.Action_D.IsPressed() && !_but.Contains("D")) _but += "D";
+        if (playerControls.Player.Action_E.IsPressed() && !_but.Contains("E")) _but += "E";
 
         if (playerControls.Player.Action_ABCD.IsPressed()) _but = "ABCD";
 
@@ -477,7 +471,7 @@ public class GameWorldObject : MonoBehaviour
 
     InputSwitchCase inputTypeSwitchCase = new InputSwitchCase();
 
-    private bool input_CanInput(short type, string _button, byte lieniant, 
+    public bool input_CanInput(short type, string _button, byte lieniant, 
         byte holdBuffer)
     {
         if (holdBuffer > currInput.chargeTime)
@@ -525,12 +519,21 @@ public class GameWorldObject : MonoBehaviour
         {
             if (_input.Length == 1 && lieniant == 0)
             {
-                if (_input[0] == 5 && (currInput.inputType == 5 ||
-                    currInput.inputType == 4 || currInput.inputType == 6)) return true;
-                else if (_input[0] == 2 && (currInput.inputType == 2 ||
-                    currInput.inputType == 1 || currInput.inputType == 3)) return true;
-                else if (_input[0] == 8 && (currInput.inputType == 8 ||
-                    currInput.inputType == 7 || currInput.inputType == 9)) return true;
+                if (_input[0] == 5)
+                {
+                    if (currInput.inputType == 5 || currInput.inputType == 4 || currInput.inputType == 6) return true;
+                    else return false;
+                }
+                else if (_input[0] == 2)
+                {
+                    if (currInput.inputType == 2 || currInput.inputType == 1 || currInput.inputType == 3) return true;
+                    else return false;
+                }
+                else if (_input[0] == 8)
+                {
+                    if (currInput.inputType == 8 || currInput.inputType == 7 || currInput.inputType == 9) return true;
+                    else return false;
+                }
             }
             else if (currInput.inputType != _input[_input.Length - 1]) return false;
         }
@@ -588,5 +591,26 @@ public class GameWorldObject : MonoBehaviour
             }
         }
         return false;
+    }
+
+    private void addGlobalVariables()
+    {
+        commands.createVar(0, 0, maxHealth);
+        commands.createVar(0, 1, curHealth);
+        commands.createVar(0, 2, walkingSpeed[0]);
+        commands.createVar(0, 3, walkingSpeed[1]);
+        commands.createVar(0, 4, dashSpeed[0]);
+        commands.createVar(0, 5, dashSpeed[1]);
+        commands.createVar(0, 6, dashSpeed[2]);
+        commands.createVar(0, 7, airActionsCount[0]);
+        commands.createVar(0, 8, airActionsCount[1]);
+        commands.createVar(0, 9, airActionsCount[2]);
+        commands.createVar(0, 10, jumpSpeed[0]);
+        commands.createVar(0, 11, jumpSpeed[1]);
+        commands.createVar(0, 12, jumpSpeed[2]);
+        commands.createVar(0, 13, defaultGravity);
+        commands.createVar(0, 14, locX);
+        commands.createVar(0, 15, locY);
+        commands.createVar(0, 16, locZ);
     }
 }

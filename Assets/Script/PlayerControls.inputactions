@@ -60,9 +60,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Action_DebugSwitchPlayer",
+                    "name": "Action_E",
                     "type": "Button",
-                    "id": "89c7997b-d41c-4356-a59a-bc069ecde2cf",
+                    "id": "d18739c5-87f8-46b8-ab66-db17c9d125e4",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -336,12 +336,23 @@
                 },
                 {
                     "name": "",
-                    "id": "7bcda857-9620-4807-9e7a-2b87326eef45",
-                    "path": "<Keyboard>/n",
+                    "id": "fc9fe873-3153-4953-bab1-c466eca89a29",
+                    "path": "<Keyboard>/o",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Action_DebugSwitchPlayer",
+                    "action": "Action_E",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "739bc90e-1564-4209-9292-75d10750a205",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Action_E",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

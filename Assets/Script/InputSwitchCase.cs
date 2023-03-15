@@ -9,6 +9,8 @@ public class InputSwitchCase
         {
             default:
                 return new byte[] { 5 };
+            case 0:
+                return new byte[] {};
             case 10:
                 return new byte[] { 2, 3, 6 };
             case 11:

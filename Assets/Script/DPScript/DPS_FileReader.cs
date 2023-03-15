@@ -42,7 +42,7 @@ namespace DPScript
                     position += 4;
                     scriptCommand com = new scriptCommand();
                     com.id = file.ReadInt32();
-                    //Console.WriteLine(com.id);
+                    //Debug.Log(com.id);
                     DPS_CommandDB.Command temp = db_Reader.getCommand(com.id);
                     //Console.WriteLine(temp.name);
                     string[] args = temp.args;

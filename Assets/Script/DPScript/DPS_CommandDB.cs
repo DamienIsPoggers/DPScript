@@ -25,6 +25,9 @@ namespace DPScript
 
             switch(id)
             {
+                default:
+                    Debug.Log("Command " + id + " doesnt exist in the db");
+                    break;
                 case 1:
                 case 2:
                     temp.args = new string[] { "1s", "1u" };
@@ -61,11 +64,7 @@ namespace DPScript
                     temp.args = new string[] { "1n" };
                     break;
                 case 14:
-                    temp.args = new string[] { "1h", "1c" };
-                    break;
                 case 15:
-                    temp.args = new string[] { "1h", "1c" };
-                    break;
                 case 16:
                     temp.args = new string[] { "1h", "1c" };
                     break;
@@ -74,6 +73,19 @@ namespace DPScript
                     break;
                 case 18:
                     temp.args = new string[] { "2i" };
+                    break;
+                case 19:
+                case 20:
+                    temp.args = new string[] { "1h", "2i" };
+                    break;
+                case 24:
+                    temp.args = new string[] { "1h" };
+                    break;
+                case 30:
+                    temp.args = new string[] { "1h" };
+                    break;
+                case 31:
+                    temp.args = new string[] { "1n" };
                     break;
                 case 40:
                 case 41:
@@ -114,6 +126,23 @@ namespace DPScript
                 case 112:
                 case 113:
                 case 114:
+                    temp.args = new string[] { "1n" };
+                    break;
+                case 119:
+                    temp.args = new string[] { "1s" };
+                    break;
+                case 120:
+                    temp.args = new string[] { "1h" };
+                    break;
+                case 121:
+                case 122:
+                    temp.args = new string[] { "1s" };
+                    break;
+                case 123:
+                case 124:
+                    temp.args = new string[] { "1b" };
+                    break;
+                case 125:
                     temp.args = new string[] { "1n" };
                     break;
             }

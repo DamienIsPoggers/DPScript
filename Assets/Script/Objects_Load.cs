@@ -25,6 +25,20 @@ public class Objects_Load
                 }
             }
 
+        if (loadFile.entries.ContainsKey("CommonScriptLoad"))
+            for(int i = 0; i < loadFile.entries["CommonScriptLoad"].count; i++)
+            {
+                //Debug.Log("Cmn Script Load");
+                scriptFile temp = fileReader.loadScript(Resources.Load<TextAsset>("Char/Cmn/" + loadFile.entries["CommonScriptLoad"].arrays[i].strings[0]));
+                for (int i2 = 0; i2 < temp.entries.Count; i2++)
+                {
+                    if (temp.entries[temp.entryNames[i2]].subroutine)
+                        o.commonSubroutines.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+                    else
+                        o.commonStates.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+                }
+            }
+
         if(loadFile.entries.ContainsKey("ColLoad"))
             for(int i = 0; i < loadFile.entries["ColLoad"].count; i++)
             {
