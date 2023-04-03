@@ -1,0 +1,34 @@
+{
+    "name": "DebugShit",
+    "maps": [
+        {
+            "name": "Debug",
+            "id": "c12add88-9231-4332-9365-b7d8bef64acb",
+            "actions": [
+                {
+                    "name": "DebugMenu",
+                    "type": "Button",
+                    "id": "71d57b90-215c-499c-bbaa-01c99e3170ee",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "7eae925f-7965-495b-9e23-d2ecacc75286",
+                    "path": "<Keyboard>/f1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DebugMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

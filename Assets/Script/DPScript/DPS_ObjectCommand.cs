@@ -29,7 +29,7 @@ namespace DPScript
         {
             if (p == null)
                 p = o.player;
-            if (isInUpon)
+            if (isInUpon && com.id != 31)
             {
                 uponCode.commands.Add(com);
                 return;
@@ -63,7 +63,9 @@ namespace DPScript
                 case 8:
                     callSubroutine(com.stringArgs[0]);
                     break;
-
+                case 10:
+                    cmnSubroutine(com.stringArgs[0]);
+                    break;
                 case 12:
                     ifCom(com);
                     break;
@@ -195,6 +197,17 @@ namespace DPScript
                 case 125:
                     exitState();
                     break;
+                case 126:
+                    playAnimation(com.stringArgs[0], com.floatArgs[0]);
+                    break;
+                case 127:
+                    Transform focus = null;
+                    if (com.byteArgs[0] == 0)
+                        focus = o.transform;
+                    CameraManager.Instance.playCameraAnimation(o.cameraAnimator, (float)o.dir, com.stringArgs[0],
+                        focus, com.uintArgs[0], com.uintArgs[1], new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
+                        new Vector3(com.floatArgs[3], com.floatArgs[4], com.floatArgs[5]));
+                    break;
             }
         }
 
@@ -273,6 +286,7 @@ namespace DPScript
 
         public void enterState(string state)
         {
+            o.activateUpon(1);
             o.hitOrBlockCancels.Clear();
             o.hitCancels.Clear();
             o.blockCancels.Clear();
@@ -286,6 +300,7 @@ namespace DPScript
             o.tick = 0;
             o.labelPositions.Clear();
             o.tempVariables.Clear();
+            o.uponStatements.Clear();
             if(!o.transferMomentum)
             {
                 o.xImpulse = 0;
@@ -586,6 +601,17 @@ namespace DPScript
             enterState(o.nextState);
         }
 
+        public void playAnimation(string state, float speed)
+        {
+            for(int i = 0; i < o.armatureList.Count; i++)
+            {
+                if (!o.renderers[o.armatureList[i]].enabled)
+                    continue;
+                o.armatures[o.armatureList[i]].Play(state);
+                o.armatures[o.armatureList[i]].speed = speed;
+            }
+        }
+
         #endregion
 
         #region ifCommands
@@ -619,7 +645,7 @@ namespace DPScript
                 }
             }
 
-            if (checkNum! > 0)
+            if (checkNum <= 0)
             {
                 ifFailed = true;
                 canElse = true;

@@ -8,7 +8,6 @@ using System;
 public class GameWorldObject : MonoBehaviour
 {
     public Dictionary<string, scriptEntry> states = new Dictionary<string, scriptEntry>();
-    public Dictionary<string, scriptEntry> commonStates = new Dictionary<string, scriptEntry>();
     public Dictionary<string, scriptEntry> subroutines = new Dictionary<string, scriptEntry>();
     public Dictionary<string, scriptEntry> commonSubroutines = new Dictionary<string, scriptEntry>();
     public Dictionary<string, collisionEntry> collisions = new Dictionary<string, collisionEntry>();
@@ -21,8 +20,7 @@ public class GameWorldObject : MonoBehaviour
     public string idStr;
 
     DPS_ObjectCommand commands;
-    Battle_Manager battleManager;
-    Camera cameraMain;
+    Transform cameraMain;
 
     GameObject CollisionChild;
 
@@ -49,6 +47,8 @@ public class GameWorldObject : MonoBehaviour
     public string returnString = "";
     public int returnInt = 0;
     public bool faceCamera = true;
+    public bool playingAnim = false;
+    public float animTime = 0;
     public bool invincible = false, hitboxesDisabled = false, noCollision = false, ignoreFreezes = false, armor = false;
     public bool friendlyFire = false; //doesnt work if they are on the same parent
     public bool isProjectile = false;
@@ -65,6 +65,7 @@ public class GameWorldObject : MonoBehaviour
     public List<string> armatureList = new List<string>();
     public Dictionary<string, Animator> armatures = new Dictionary<string, Animator>();
     public Dictionary<string, SkinnedMeshRenderer> renderers = new Dictionary<string, SkinnedMeshRenderer>();
+    public RuntimeAnimatorController cameraAnimator;
 
     public Dictionary<int, DPS_Stage> world = new Dictionary<int, DPS_Stage>();
     public List<Object_Collision> loadedCollisions = new List<Object_Collision>();
@@ -77,12 +78,11 @@ public class GameWorldObject : MonoBehaviour
     private InputElement currInput = new InputElement(5);
     private List<InputElement> buffer = new List<InputElement>();
 
-
     //some various variables for misc stuff
     public int[] walkingSpeed = new int[] { 400, -300 }; //fwalk, bwalk
     public int[] dashSpeed = new int[] { 600, 40, 820 }; //inital speed, accel, max
     public int[] airActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
-    public int[] jumpSpeed = new int[] { 500, -500, 1900 }; //fspeed, bspeed, height
+    public int[] jumpSpeed = new int[] { 500, -500, 1500 }; //fspeed, bspeed, height
     public int defaultGravity = -90;
 
 
@@ -98,7 +98,7 @@ public class GameWorldObject : MonoBehaviour
     private void Awake()
     {
         commands = gameObject.AddComponent<DPS_ObjectCommand>();
-        cameraMain = GameObject.Find("Main Camera").GetComponent<Camera>();
+        cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
         playerControls = new PlayerControls();
 
@@ -108,12 +108,6 @@ public class GameWorldObject : MonoBehaviour
             armatures[armatureList[i]].speed = 0.005f;
             renderers.Add(armatureList[i], transform.Find("Mesh").transform.Find(armatureList[i]).GetComponentInChildren<SkinnedMeshRenderer>());
         }
-
-        Application.targetFrameRate = 60;
-
-        battleManager = GameObject.Find("BattleManager").GetComponent<Battle_Manager>();
-        for (int i = 0; i < battleManager.stages.Count; i++)
-            world.Add(battleManager.stages[i].id, battleManager.stages[i]);
 
         CollisionChild = transform.Find("Collision").gameObject;
 
@@ -125,6 +119,14 @@ public class GameWorldObject : MonoBehaviour
             Objects_Load tempLoad = new Objects_Load();
             tempLoad.mainLoad("Char/" + debugID + "/" + debugID + "_load", this, debugID, true);
         }
+    }
+
+    private void Start()
+    {
+        Application.targetFrameRate = 60;
+
+        for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
+            world.Add(Battle_Manager.Instance.stages[i].id, Battle_Manager.Instance.stages[i]);
     }
 
     private void OnEnable()
@@ -161,7 +163,6 @@ public class GameWorldObject : MonoBehaviour
         scaleUpdate();
 
         inputUpdate();
-
 
         if (hitstopTick == 0 && !ignoreFreezes)
         {
@@ -203,7 +204,8 @@ public class GameWorldObject : MonoBehaviour
 
             if (curCollision != lastCollision)
             {
-                switchSprite();
+                if(!playingAnim)
+                    switchSprite();
 
                 if (collisions.ContainsKey(lastCollision))
                     for (int i = 0; i < collisions[lastCollision].boxCount; i++)
@@ -214,21 +216,27 @@ public class GameWorldObject : MonoBehaviour
                 {
                     Object_Collision temp = CollisionChild.AddComponent<Object_Collision>();
                     temp.init(collisions[curCollision].boxes[i], collisions[curCollision].hasZ,
-                        collisions[curCollision].sphere, this, this, battleManager);
+                        collisions[curCollision].sphere, this, this);
                     loadedCollisions.Add(temp);
-                    battleManager.collisions.Add(temp);
+                    Battle_Manager.Instance.collisions.Add(temp);
                     //Debug.Log(i);
                 }
 
                 
             }
 
-            /*
-            if (lerping)
+            if (lerping && !playingAnim)
                 if (collisions.ContainsKey(lerpCollision))
                     lerpSprite();
-            */
         }
+
+        for (int i = 0; i < armatureList.Count; i++)
+            if (renderers[armatureList[i]].enabled)
+            {
+                if (armatures[armatureList[i]].GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
+                    playingAnim = false;
+                break;
+            }
 
         if (!isPlayer)
             return;
@@ -251,12 +259,9 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].Play(state, 0, (float)frame / 570 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
+                    armatures[armatureList[i]].Play(state, 0, (float)frame / 500 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
                         2 / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.frameRate));
-                    if (!lerping)
-                        armatures[armatureList[i]].speed = 0f;
-                    else
-                        armatures[armatureList[i]].speed = 1;
+                    armatures[armatureList[i]].speed = 0f;
                 }
 
             }
@@ -275,7 +280,9 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    //armatures[armatureList[i]].CrossFade(stateId, )
+                    armatures[armatureList[i]].CrossFade(state, 1, 0, (float)frame / 500 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
+                        2 / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.frameRate));
+                    armatures[armatureList[i]].speed = 1;
                 }
             }
         }
@@ -285,8 +292,8 @@ public class GameWorldObject : MonoBehaviour
     {
         if (faceCamera)
         { 
-            transform.LookAt(cameraMain.transform);
-            transform.localEulerAngles = new Vector3(xRotation, transform.localEulerAngles.y+180+yRoatation, zRotation);
+            transform.LookAt(cameraMain);
+            transform.localEulerAngles = new Vector3(xRotation, transform.localEulerAngles.y+yRoatation, zRotation);
         }
         else
             transform.localEulerAngles = new Vector3(xRotation, yRoatation, zRotation);
@@ -322,7 +329,7 @@ public class GameWorldObject : MonoBehaviour
         transform.localScale = new Vector3(xScale * dir, yScale, zScale);
     }
 
-    private void activateUpon(int type)
+    public void activateUpon(int type)
     {
         if (uponStatements.ContainsKey(type))
             for (int i = 0; i < uponStatements[type].commands.Count; i++)

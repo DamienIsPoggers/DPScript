@@ -2,60 +2,69 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
+using ImGuiNET;
+using System.Drawing;
+using Steamworks;
+using UnityEngine.UI;
+using Autodesk.Fbx;
 
 public class HitboxOverlay : MonoBehaviour
 {
-    public bool active = false;
 
-    Material colBox, hitBox, hurtBox, miscBox, snapBox;
-
-    [SerializeField]
-    Battle_Manager battleManager;
-    List<Object_Collision> collisions;
-    List<GameObject> boxesRendered = new List<GameObject>();
-
-    // Start is called before the first frame update
-    void Start()
+    void OnEnable()
     {
-        colBox = Resources.Load<Material>("UI/HitboxOverlay/Colbox_Mat");
-        hitBox = Resources.Load<Material>("UI/HitboxOverlay/Hitbox_Mat");
-        hurtBox = Resources.Load<Material>("UI/HitboxOverlay/Hurtbox_Mat");
-        miscBox = Resources.Load<Material>("UI/HitboxOverlay/Miscbox_Mat");
-        snapBox = Resources.Load<Material>("UI/HitboxOverlay/Snapbox_Mat");
-        transform.position = new Vector3(0, 0, 0);
+        ImGuiUn.Layout += Draw;
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnDisable()
     {
-        if(!active)
+        ImGuiUn.Layout -= Draw;
+    }
+
+    void Draw()
+    {
+        if (!Battle_Manager.Instance.showHitboxes)
             return;
 
-        if(collisions != battleManager.collisions)
+        ImGui.GetWindowDrawList().AddQuadFilled(Vector2.right, Vector2.up, Vector2.left, Vector2.down, 0xFFFF0000);
+
+        foreach (Object_Collision box in Battle_Manager.Instance.collisions)
         {
-            if(collisions != null)
-            for(int i = 0; i < collisions.Count; i++)
-                Destroy(boxesRendered[0]);
+            Vector2 pointA = new Vector2((box.posX - box.distanceX) / 100, (box.posY + box.distanceY) / 250);
+            Vector2 pointB = new Vector2((box.posX + box.distanceX) / 100, (box.posY + box.distanceY) / 250);
+            Vector2 pointC = new Vector2((box.posX + box.distanceX) / 100, (box.posY - box.distanceY) / 250);
+            Vector2 pointD = new Vector2((box.posX - box.distanceX) / 100, (box.posY - box.distanceY) / 250);
 
-            boxesRendered.Clear();
+            pointA = Camera.main.WorldToScreenPoint(pointA);
+            pointB = Camera.main.WorldToScreenPoint(pointB);
+            pointC = Camera.main.WorldToScreenPoint(pointC);
+            pointD = Camera.main.WorldToScreenPoint(pointD);
 
-            collisions = battleManager.collisions;
+            Debug.Log(pointA.ToString());
 
-            for(int i = 0; i < collisions.Count; i++)
+            uint outlineColor, boxColor;
+            switch(box.box.type)
             {
-                Object_Collision tempBox = collisions[i];
-                GameObject box = new GameObject("box");
-
-                
-
-                box.transform.parent = transform;
-
-                box.transform.position = new Vector3(tempBox.locX, tempBox.locY, tempBox.locZ);
-                box.transform.localScale = new Vector3(tempBox.distanceX, tempBox.distanceY, tempBox.distanceZ);
-
-                boxesRendered.Add(box);
-                
+                default:
+                    outlineColor = 0xFFFFFFFF;
+                    boxColor = 0x78FFFFFF;
+                    break;
+                case 0:
+                    outlineColor = 0xFFFFDC00;
+                    boxColor = 0x78FFDC00;
+                    return;
+                case 1:
+                    outlineColor = 0xFF0033CC;
+                    boxColor = 0x780033CC;
+                    return;
+                case 2:
+                    outlineColor = 0xFFFF0000;
+                    boxColor = 0x78FF0000;
+                    return;
             }
+
+            ImGui.GetWindowDrawList().AddQuad(pointA, pointB, pointC, pointD, outlineColor, 1);
+            ImGui.GetWindowDrawList().AddQuadFilled(pointA, pointB, pointC, pointD, boxColor);
         }
     }
 }

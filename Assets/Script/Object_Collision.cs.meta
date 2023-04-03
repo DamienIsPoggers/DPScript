@@ -3,7 +3,12 @@ guid: 5ab4f99409a094d4986c55a5f6d7b353
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - player: {instanceID: 0}
+  - parent: {instanceID: 0}
+  - battleManager: {instanceID: 0}
+  - boxOverlay: {fileID: 6224658193161196842, guid: 71f7d887b603f2e40b6fa5fc910c7ddf, type: 3}
+  - boxColor: {fileID: 2100000, guid: 7987cc3b2094f4b42a197a0212ca0a1b, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

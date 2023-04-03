@@ -34,8 +34,6 @@ public class Objects_Load
                 {
                     if (temp.entries[temp.entryNames[i2]].subroutine)
                         o.commonSubroutines.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
-                    else
-                        o.commonStates.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
                 }
             }
 
