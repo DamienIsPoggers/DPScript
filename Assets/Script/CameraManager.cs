@@ -17,6 +17,7 @@ public class CameraManager : MonoBehaviour
     bool isFocused = false;
     Transform camFocus;
     float camZoom = 1;
+    Vector3 focusPos;
 
     [SerializeField]
     Transform animOffset;
@@ -34,7 +35,6 @@ public class CameraManager : MonoBehaviour
     {
         if(isInAnim)
         {
-            Vector3 focusPos = new Vector3(camFocus.localPosition.x, camFocus.localPosition.y + 2, -3);
             camAnimBlendTime[0]++;
             if (camAnimBlendTime[3] <= camAnimBlendTime[1])
             {
@@ -43,7 +43,7 @@ public class CameraManager : MonoBehaviour
             }
             if (camAnimBlendTime[0] >= camAnimBlendTime[2])
             {
-                if (camAnimBlendTime[3] == camAnimBlendTime[1] + 1)
+                if (camAnimBlendTime[0] == camAnimBlendTime[2])
                     camAnimBlendTime[3] = 1;
                 if (camAnimBlendTime[3] <= camAnimBlendTime[1])
                 {
@@ -80,6 +80,7 @@ public class CameraManager : MonoBehaviour
         isInAnim = true;
         animOffset.localPosition = offsetPos;
         animOffset.localEulerAngles = offsetRot;
+        focusPos = new Vector3(camFocus.localPosition.x, camFocus.localPosition.y + 2, -3);
     }
 
     void updateDefaultPos()

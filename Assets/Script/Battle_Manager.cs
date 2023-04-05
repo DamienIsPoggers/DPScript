@@ -15,6 +15,8 @@ public class Battle_Manager : MonoBehaviour
     public bool spriteCharacterOnScreen = false;
     public bool showHitboxes = false;
 
+    public List<GameWorldObject> players = new List<GameWorldObject>();
+
     // Start is called before the first frame update
     void Awake()
     {

@@ -37,8 +37,8 @@ public class GameWorldObject : MonoBehaviour
     public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
     public int xImpulseAdd = 0, yImpulseAdd = 0, zImpulseAdd = 0;
     public bool transferMomentum = false;
-    public float xRotation = 0, yRoatation = 0, zRotation = 0;
-    public float xScale = 1, yScale = 1, zScale = 1;
+    public Vector3 rotation = Vector3.zero;
+    public Vector3 scale = Vector3.one;
     public byte stateType = 0;
     public bool stateHasHit = false;
     public int comboCounter = 0;
@@ -89,8 +89,6 @@ public class GameWorldObject : MonoBehaviour
     [SerializeField]
     bool isInDebug = false;
     [SerializeField]
-    string debugID = "";
-    [SerializeField]
     bool debugNoLoad = false;
 
     public bool initalized = false;
@@ -117,7 +115,7 @@ public class GameWorldObject : MonoBehaviour
         if (isInDebug)
         {
             Objects_Load tempLoad = new Objects_Load();
-            tempLoad.mainLoad("Char/" + debugID + "/" + debugID + "_load", this, debugID, true);
+            tempLoad.mainLoad("Char/" + idStr + "/" + idStr + "_load", this, idStr, true);
         }
     }
 
@@ -127,6 +125,7 @@ public class GameWorldObject : MonoBehaviour
 
         for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
             world.Add(Battle_Manager.Instance.stages[i].id, Battle_Manager.Instance.stages[i]);
+        Battle_Manager.Instance.players.Add(this);
     }
 
     private void OnEnable()
@@ -293,10 +292,10 @@ public class GameWorldObject : MonoBehaviour
         if (faceCamera)
         { 
             transform.LookAt(cameraMain);
-            transform.localEulerAngles = new Vector3(xRotation, transform.localEulerAngles.y+yRoatation, zRotation);
+            transform.localEulerAngles = new Vector3(rotation.x, transform.localEulerAngles.y+rotation.y, rotation.z);
         }
         else
-            transform.localEulerAngles = new Vector3(xRotation, yRoatation, zRotation);
+            transform.localEulerAngles = rotation;
     }
 
     private void positionUpdate()
@@ -326,7 +325,7 @@ public class GameWorldObject : MonoBehaviour
 
     private void scaleUpdate()
     {
-        transform.localScale = new Vector3(xScale * dir, yScale, zScale);
+        transform.localScale = new Vector3(scale.x * dir, scale.y, scale.z);
     }
 
     public void activateUpon(int type)
