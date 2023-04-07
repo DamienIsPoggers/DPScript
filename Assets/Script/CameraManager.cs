@@ -9,14 +9,15 @@ public class CameraManager : MonoBehaviour
     [SerializeField]
     RuntimeAnimatorController defaultController;
     [SerializeField]
-    GameObject camera;
+    GameObject cam;
     Animator cameraAnimator;
 
     Vector3 defaultPosition = Vector3.zero;
     Vector3 defaultRotation = Vector3.zero;
     bool isFocused = false;
     Transform camFocus;
-    float camZoom = 1;
+    float camZoom = 1f;
+    byte camZoomTime = 0, camZoomReturnTimer = 0;
     Vector3 focusPos;
 
     [SerializeField]
@@ -24,15 +25,24 @@ public class CameraManager : MonoBehaviour
     bool isInAnim = false;
     uint[] camAnimBlendTime = new uint[4];
 
+    Transform p1, p2;
+
     void Awake()
     {
         Instance = this;
-        cameraAnimator = camera.GetComponent<Animator>();
+        cameraAnimator = cam.GetComponent<Animator>();
     }
 
-    // Update is called once per frame
+    void Start()
+    {
+        p1 = Battle_Manager.Instance.players[0].transform;
+        p2 = Battle_Manager.Instance.players[1].transform;
+    }
+
     void Update()
     {
+        transform.parent = Battle_Manager.Instance.stages[p1.GetComponent<GameWorldObject>().onStage].transform;
+
         if(isInAnim)
         {
             camAnimBlendTime[0]++;
@@ -61,7 +71,35 @@ public class CameraManager : MonoBehaviour
                     animOffset.localEulerAngles = Vector3.zero;
                 }
             }
-
+        }
+        else
+        {
+            float posX = (p1.localPosition.x + p2.localPosition.x) / 2;
+            float posY = 1.5f;
+            float posZ = -3f;
+            float distance = Mathf.Abs(p1.localPosition.x - p2.localPosition.x); 
+            if (distance < camZoom + 3f && camZoomTime > 0)
+            {
+                camZoomTime--;
+                if (camZoomTime <= 20)
+                {
+                    if (distance < 4f)
+                        distance = 4f;
+                    camZoomReturnTimer++;
+                    posZ += -Mathf.Lerp(camZoom + 3f, distance, (float)camZoomReturnTimer / 20) / 2 + 2f;
+                }
+                else
+                    posZ += -(camZoom + 3) / 2 + 2f;
+            }
+            else if (distance > 4f)
+            {
+                posZ += -distance / 2 + 2f;
+                camZoom = distance - 3f;
+                camZoomTime = 90;
+                camZoomReturnTimer = 0;
+            }
+            transform.localPosition = new Vector3(posX, posY, posZ);
+            updateDefaultPos();
         }
     }
 
@@ -80,12 +118,12 @@ public class CameraManager : MonoBehaviour
         isInAnim = true;
         animOffset.localPosition = offsetPos;
         animOffset.localEulerAngles = offsetRot;
-        focusPos = new Vector3(camFocus.localPosition.x, camFocus.localPosition.y + 2, -3);
+        focusPos = new Vector3(camFocus.localPosition.x, camFocus.localPosition.y + 1.5f, -3);
     }
 
     void updateDefaultPos()
     {
-        defaultPosition = new Vector3(0, -2, -3);
+        defaultPosition = transform.localPosition;
         defaultRotation = transform.localEulerAngles;
     }
 }
