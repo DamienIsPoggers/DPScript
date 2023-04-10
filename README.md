@@ -11,3 +11,5 @@ or message me on discord (@DamienIsPoggers#0008) or [twitter (@DamienIsPog)](htt
 [rlabrecque's Steamworks.NET](https://github.com/rlabrecque/Steamworks.NET) used for steam features like netplay and achievement support.
 
 [Aerthas' Arcsys Shader](https://github.com/Aerthas/UNITY-Arc-system-Works-Shader) for Sol's and Ky's shader
+
+[Unity-Chan](https://github.com/unity3d-jp/UnityChanToonShaderVer2_Project) for various shaders
