@@ -16,7 +16,7 @@ public class GameWorldObject : MonoBehaviour
 
     public List<string> stateCancelIDs = new List<string>();
 
-    public int idNum;
+    public byte playerNum;
     public string idStr;
 
     DPS_ObjectCommand commands;
@@ -24,8 +24,8 @@ public class GameWorldObject : MonoBehaviour
 
     GameObject CollisionChild;
 
-    Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
-    public GameWorldObject player;
+    public Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
+    public GameWorldObject player, opponent;
 
     public int curHealth = 1, maxHealth = 1;
     public int damage = 0, pushBackX = 0, pushbackZ = 0, airPushBackX = 0, airPushBackY = 0, airPushBackZ = 0, attackType = 0, counterType = 0;
@@ -37,6 +37,8 @@ public class GameWorldObject : MonoBehaviour
     public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
     public int xImpulseAdd = 0, yImpulseAdd = 0, zImpulseAdd = 0;
     public bool transferMomentum = false;
+    public int distance = 0;
+    public bool hasWallCollision = true;
     public Vector3 rotation = Vector3.zero;
     public Vector3 scale = Vector3.one;
     public byte stateType = 0;
@@ -53,6 +55,7 @@ public class GameWorldObject : MonoBehaviour
     public bool friendlyFire = false; //doesnt work if they are on the same parent
     public bool isProjectile = false;
     public bool isPlayer = true, isActive = true;
+    public bool willHit = false, willBeHit = false, willClash = false;
     public uint superFreezeTime = 0;
     public int projectileLevel = 1;
     public Dictionary<int, int> globalVariables = new Dictionary<int, int>(), tempVariables = new Dictionary<int, int>();
@@ -73,7 +76,9 @@ public class GameWorldObject : MonoBehaviour
     public List<string> hitOrBlockCancels = new List<string>(), hitCancels = new List<string>(), blockCancels = new List<string>(), whiffCancels = new List<string>();
     public List<string> cancelableStates = new List<string>();
 
-    private PlayerControls playerControls;
+    public Dictionary<byte, string> hitstunAnims = new Dictionary<byte, string>();
+
+    public PlayerControls playerControls;
 
     private InputElement currInput = new InputElement(5);
     private List<InputElement> buffer = new List<InputElement>();
@@ -92,6 +97,7 @@ public class GameWorldObject : MonoBehaviour
     bool debugNoLoad = false;
 
     public bool initalized = false;
+    public bool ignoreInputs = false;
 
     private void Awake()
     {
@@ -120,7 +126,7 @@ public class GameWorldObject : MonoBehaviour
     }
 
     private void Start()
-    {
+    { 
         Application.targetFrameRate = 60;
 
         for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
@@ -149,6 +155,14 @@ public class GameWorldObject : MonoBehaviour
             commands.cmnSubroutine("cmnInit");
             commands.enterState("CmnStand");
             player = this;
+            for(int i = 0; i < Battle_Manager.Instance.players.Count; i++)
+                if (Battle_Manager.Instance.players[i] != this)
+                {
+                    opponent = Battle_Manager.Instance.players[i];
+                    break;
+                }
+            if (opponent == null)
+                return;
             addGlobalVariables();
             initalized = true;
             return;
@@ -303,10 +317,17 @@ public class GameWorldObject : MonoBehaviour
         //if(!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
         //return;
         transform.parent = world[onStage].transform;
-        
+
+        distance = Mathf.Abs(opponent.locX - locX);
+
         if (!momentumPause)
         {
-            locX += xImpulse * dir; locY += yImpulse * dir; locZ += zImpulse * dir;
+            if (hasWallCollision)
+                if (distance + xImpulse > 60000 && Mathf.Abs(locX) + xImpulse > Battle_Manager.Instance.stateWidth)
+                    locX += xImpulse * dir;
+            else
+                locX += xImpulse * dir;
+            locY += yImpulse; locZ += zImpulse;
             xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
         }
 
@@ -365,6 +386,8 @@ public class GameWorldObject : MonoBehaviour
 
     private void inputUpdate()
     {
+        if (ignoreInputs)
+            return;
         inputs_AddToBuffer();
 
         //buffer update

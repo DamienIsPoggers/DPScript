@@ -119,6 +119,13 @@ namespace DPScript
                 case 106:
                     temp.args = new string[] { "1n" };
                     break;
+                case 107:
+                case 108:
+                    temp.args = new string[] { "1s" };
+                    break;
+                case 109:
+                    temp.args = new string[] { "1h", "1s" };
+                    break;
                 case 110:
                     temp.args = new string[] { "1s" };
                     break;

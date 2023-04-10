@@ -14,8 +14,10 @@ public class Battle_Manager : MonoBehaviour
     public List<DPS_Stage> stages = new List<DPS_Stage>();
     public bool spriteCharacterOnScreen = false;
     public bool showHitboxes = false;
+    public int stateWidth = 0;
 
     public List<GameWorldObject> players = new List<GameWorldObject>();
+    public DPS_CommonPlayer commonPlayer;
 
     // Start is called before the first frame update
     void Awake()

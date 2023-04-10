@@ -161,6 +161,9 @@ namespace DPScript
                 case 106:
                     stateRegisterEnd();
                     break;
+                case 109:
+                    setHitstunState(com.byteArgs[0], com.stringArgs[0]);
+                    break;
                 case 110:
                     addCancel(com.stringArgs[0]);
                     break;
@@ -835,6 +838,11 @@ namespace DPScript
         {
             o.stateCancels.Add(entryAdd.name, entryAdd);
             o.stateCancelIDs.Insert(0, entryAdd.name);
+        }
+
+        public void setHitstunState(byte animNum, string state)
+        {
+            o.hitstunAnims.Add(animNum, state);
         }
 
         #endregion
