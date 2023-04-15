@@ -4,15 +4,22 @@ using UnityEngine;
 using ImGuiNET;
 using DPScript;
 using System.Text;
+using DPScript.Loading;
 
 public class DebugMenu : MonoBehaviour
 {
     DebugShit inputStuff;
     bool show = false;
 
-    List<byte[]> soundToPlay = new List<byte[]>();
-    List<byte[]> stateToEnter = new List<byte[]>();
+    List<byte[]> soundToPlay = new List<byte[]>(), stateToEnter = new List<byte[]>(), effectToCall = new List<byte[]>();
+    bool commonPlayerEffect = false;
+    List<Vector3> effectSpawnOffsets = new List<Vector3>();
+    List<int> effectSpawnDeathTime = new List<int>();
     byte[] songToPlay = new byte[50];
+
+    byte[] objectToSpawn = new byte[255];
+    int objectSpawnColor = 0;
+    Objects_Load loading = new Objects_Load();
 
     void Start()
     {
@@ -20,6 +27,9 @@ public class DebugMenu : MonoBehaviour
         {
             soundToPlay.Add(new byte[32]);
             stateToEnter.Add(new byte[32]);
+            effectToCall.Add(new byte[32]);
+            effectSpawnOffsets.Add(Vector3.zero);
+            effectSpawnDeathTime.Add(0);
         }
     }
 
@@ -77,6 +87,23 @@ public class DebugMenu : MonoBehaviour
                     ImGui.TreePop();
                 }
 
+                if(ImGui.TreeNode("Player Spawning"))
+                {
+                    ImGui.InputText("Load path", objectToSpawn, 255);
+                    ImGui.InputInt("Color", ref objectSpawnColor);
+                    if (ImGui.Button("Spawn"))
+                    {
+                        loading.mainLoad(Resources.Load<DPS_ObjectLoad>(Encoding.ASCII.GetString(objectToSpawn).Replace("\0", string.Empty)), objectSpawnColor);
+                        soundToPlay.Add(new byte[32]);
+                        stateToEnter.Add(new byte[32]);
+                        effectToCall.Add(new byte[32]);
+                        effectSpawnOffsets.Add(Vector3.zero);
+                        effectSpawnDeathTime.Add(0);
+                    }
+
+                    ImGui.TreePop();
+                }
+
                 ImGui.TreePop();
             }
 
@@ -108,6 +135,8 @@ public class DebugMenu : MonoBehaviour
                             Battle_Manager.Instance.players[i].dir = 1;
                         ImGui.SameLine();
                         ImGui.Text("Set Direction");
+
+                        ImGui.Checkbox("Face Camera", ref Battle_Manager.Instance.players[i].faceCamera);
                         
 
                         ImGui.TreePop();
@@ -120,6 +149,27 @@ public class DebugMenu : MonoBehaviour
                         if (ImGui.Button("Enter"))
                             Battle_Manager.Instance.players[i].GetComponent<DPS_ObjectCommand>()
                                 .enterState(Encoding.ASCII.GetString(stateToEnter[i]).Replace("\0", string.Empty));
+
+                        ImGui.Separator();
+                        ImGui.Checkbox("Load common player effect", ref commonPlayerEffect);
+                        ImGui.InputText("Effect to play", effectToCall[i], 32);
+                        Vector3 temp = effectSpawnOffsets[i];
+                        ImGui.InputFloat3("Effect Offset", ref temp);
+                        effectSpawnOffsets[i] = temp;
+                        int tempInt = effectSpawnDeathTime[i];
+                        ImGui.InputInt("Death time", ref tempInt);
+                        effectSpawnDeathTime[i] = tempInt;
+                        if(ImGui.Button("Play Effect"))
+                        {
+                            if (commonPlayerEffect)
+                                Battle_Manager.Instance.commonPlayer.spawnEffect(Encoding.ASCII.GetString(effectToCall[i])
+                                    .Replace("\0", string.Empty), effectSpawnOffsets[i], (uint)effectSpawnDeathTime[i],
+                                    Battle_Manager.Instance.players[i]);
+                            else
+                                Battle_Manager.Instance.players[i].GetComponent<DPS_EffectManager>()
+                                    .spawnEffect(Encoding.ASCII.GetString(effectToCall[i]).Replace("\0",
+                                    string.Empty), effectSpawnOffsets[i], (uint)effectSpawnDeathTime[i]);
+                        }    
 
                         ImGui.TreePop();
                     }

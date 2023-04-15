@@ -2,13 +2,60 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
+using DPScript.Loading;
+using System.Linq;
 
 public class Objects_Load
 {
     DPS_FileReader fileReader = new DPS_FileReader();
 
+    public void mainLoad(DPS_ObjectLoad load, int color)
+    {
+        GameObject character = Object.Instantiate(load.prefab);
+        GameWorldObject o = character.GetComponent<GameWorldObject>();
 
-    public void mainLoad(string path, GameWorldObject o, string id, bool debug = false)
+        for(int i = 0; i < load.scriptLoad.Count; i++)
+        {
+            scriptFile temp = fileReader.loadScript(load.scriptLoad[i]);
+            for (int i2 = 0; i2 < temp.entries.Count; i2++)
+            {
+                if (temp.entries[temp.entryNames[i2]].subroutine)
+                    o.subroutines.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+                else
+                    o.states.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+            }
+        }
+
+        for(int i = 0; i < load.cmnScriptLoad.Count; i++)
+        {
+            scriptFile temp = fileReader.loadScript(load.cmnScriptLoad[i]);
+            for (int i2 = 0; i2 < temp.entries.Count; i2++)
+            {
+                if (temp.entries[temp.entryNames[i2]].subroutine)
+                    o.commonSubroutines.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+            }
+        }
+
+        for(int i = 0; i < load.colLoad.Count; i++)
+        {
+            collisionFile temp = fileReader.loadCollision(load.colLoad[i]);
+            for (int i2 = 0; i2 < temp.entries.Count; i2++)
+                o.collisions.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
+        }
+
+        DPS_MatGroup mat = load.materials.mats[color];
+        if(o.useArmature)
+            for(int i = 0; i < o.renderers.Count; i++)
+                for(int j = 0; j < o.renderers[o.armatureList[i]].materials.Length; j++)
+                {
+                    if (mat.names.Contains(o.renderers[o.armatureList[i]].materials[j].name))
+                        o.renderers[o.armatureList[i]].materials[j] = mat.materials[mat.names.IndexOf(o.renderers[o.armatureList[i]].materials[j].name)];
+                    else
+                        o.renderers[o.armatureList[i]].materials[j] = mat.materials[0];
+                }
+    }
+
+    public void debugLoad(string path, GameWorldObject o, string id, bool debug = false)
     {
         dataArray_File loadFile = fileReader.loadDataArray(Resources.Load<TextAsset>(path));
 

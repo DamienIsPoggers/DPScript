@@ -9,7 +9,7 @@ public class CameraManager : MonoBehaviour
     [SerializeField]
     RuntimeAnimatorController defaultController;
     [SerializeField]
-    GameObject cam;
+    public GameObject cam;
     Animator cameraAnimator;
 
     Vector3 defaultPosition = Vector3.zero;

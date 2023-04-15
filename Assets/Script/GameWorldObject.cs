@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using DPScript;
 using System;
+using UnityEditor.Animations;
 
 public class GameWorldObject : MonoBehaviour
 {
@@ -11,7 +12,7 @@ public class GameWorldObject : MonoBehaviour
     public Dictionary<string, scriptEntry> subroutines = new Dictionary<string, scriptEntry>();
     public Dictionary<string, scriptEntry> commonSubroutines = new Dictionary<string, scriptEntry>();
     public Dictionary<string, collisionEntry> collisions = new Dictionary<string, collisionEntry>();
-    public Dictionary<int, uponEntry> uponStatements = new Dictionary<int, uponEntry>();
+    public Dictionary<byte, uponEntry> uponStatements = new Dictionary<byte, uponEntry>();
     public Dictionary<string, StateEntry> stateCancels = new Dictionary<string, StateEntry>();
 
     public List<string> stateCancelIDs = new List<string>();
@@ -20,15 +21,17 @@ public class GameWorldObject : MonoBehaviour
     public string idStr;
 
     DPS_ObjectCommand commands;
+    DPS_AudioManager audioManager;
+    DPS_EffectManager effectManager;
     Transform cameraMain;
 
     GameObject CollisionChild;
 
     public Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
-    public GameWorldObject player, opponent;
+    public GameWorldObject player, opponent, attacker, attacking;
+    Object_Collision hitBoxThatHit, hurtBoxThatWasHit;
 
     public int curHealth = 1, maxHealth = 1;
-    public int damage = 0, pushBackX = 0, pushbackZ = 0, airPushBackX = 0, airPushBackY = 0, airPushBackZ = 0, attackType = 0, counterType = 0;
     public int tick = 0, hitstopTick = 0, dir = 1, onStage = 0, scriptPos = 0;
     public string curState = "", lastState = "", nextState = "", landingState = "";
     public bool landToState = false;
@@ -36,6 +39,8 @@ public class GameWorldObject : MonoBehaviour
     public int locX = 0, locY = 0, locZ = 0; 
     public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
     public int xImpulseAdd = 0, yImpulseAdd = 0, zImpulseAdd = 0;
+    public bool isInHKD = false;
+    public int HKDtimer = 0;
     public bool transferMomentum = false;
     public int distance = 0;
     public bool hasWallCollision = true;
@@ -51,7 +56,8 @@ public class GameWorldObject : MonoBehaviour
     public bool faceCamera = true;
     public bool playingAnim = false;
     public float animTime = 0;
-    public bool invincible = false, hitboxesDisabled = false, noCollision = false, ignoreFreezes = false, armor = false;
+    public bool invincible = false, hitboxesDisabled = false, noCollision = false, ignoreFreezes = false;
+    public byte[] armourTypes = { 0, 0, 0, 0, 0, 0 };
     public bool friendlyFire = false; //doesnt work if they are on the same parent
     public bool isProjectile = false;
     public bool isPlayer = true, isActive = true;
@@ -69,6 +75,7 @@ public class GameWorldObject : MonoBehaviour
     public Dictionary<string, Animator> armatures = new Dictionary<string, Animator>();
     public Dictionary<string, SkinnedMeshRenderer> renderers = new Dictionary<string, SkinnedMeshRenderer>();
     public RuntimeAnimatorController cameraAnimator;
+    public Animator spriteAnimator;
 
     public Dictionary<int, DPS_Stage> world = new Dictionary<int, DPS_Stage>();
     public List<Object_Collision> loadedCollisions = new List<Object_Collision>();
@@ -90,6 +97,23 @@ public class GameWorldObject : MonoBehaviour
     public int[] jumpSpeed = new int[] { 500, -500, 1500 }; //fspeed, bspeed, height
     public int defaultGravity = -90;
 
+    public int hitstun = 0;
+
+    public byte[] hitAnims = { 0, 0, 0 };
+    public int damage = 0, pushBackX = 0, pushBackY = 0, pushBackZ = 0, friction = 0, hitGravity = 0, attackHitstun = 0, hitstop = 0;
+    public uint[] untechTime = { 0, 0 };
+    public uint hardKnockdown = 0;
+    public float blockMultiplier = 1, chipMultiplier = 1;
+    public bool launchOpponent = false;
+    public byte counterType = 0;
+    public byte[] hitTypes = { 0, 0, 0, 0, 0, 0 };
+
+    public byte hitEff_type = 0;
+    public string hitEff_str = "";
+    public Vector3 hitEff_offset = Vector3.zero;
+    public uint hitEff_time = 0;
+
+
 
     [SerializeField]
     bool isInDebug = false;
@@ -102,6 +126,8 @@ public class GameWorldObject : MonoBehaviour
     private void Awake()
     {
         commands = gameObject.AddComponent<DPS_ObjectCommand>();
+        audioManager = gameObject.GetComponent<DPS_AudioManager>();
+        effectManager = gameObject.GetComponent<DPS_EffectManager>();
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
         playerControls = new PlayerControls();
@@ -114,6 +140,7 @@ public class GameWorldObject : MonoBehaviour
         }
 
         CollisionChild = transform.Find("Collision").gameObject;
+        spriteAnimator = transform.Find("Sprites").GetComponent<Animator>();
 
         if (debugNoLoad)
             return;
@@ -121,7 +148,7 @@ public class GameWorldObject : MonoBehaviour
         if (isInDebug)
         {
             Objects_Load tempLoad = new Objects_Load();
-            tempLoad.mainLoad("Char/" + idStr + "/" + idStr + "_load", this, idStr, true);
+            tempLoad.debugLoad("Char/" + idStr + "/" + idStr + "_load", this, idStr, true);
         }
     }
 
@@ -171,20 +198,42 @@ public class GameWorldObject : MonoBehaviour
         if (debugNoLoad)
             return;
 
-        positionUpdate();
+        inputUpdate();
         rotateToCamera();
         scaleUpdate();
 
-        inputUpdate();
-
-        if (hitstopTick == 0 && !ignoreFreezes)
+        if (hitstopTick > 0)
         {
-            tick--;
-            activateUpon(3);
-        }
-        else
             hitstopTick--;
-        if(tick <= 0)
+            return;
+        }
+
+        hitUpdate();
+        positionUpdate();
+
+        tick--;
+        triggerUpon(3);
+
+        if (hitstun > 0)
+        {
+            hitstun--;
+            if (hitstun == 0)
+            { xImpulse = 0; xImpulseAdd = 0; zImpulse = 0; zImpulseAdd = 0; }
+            globalVariables[18] = hitstun;
+        }
+
+        if (untechTime[0] > 0 || untechTime[1] > 0)
+        {
+            if (stateType == 0 || stateType == 1)
+                untechTime[1]--;
+            else
+                untechTime[0]--;
+
+            globalVariables[19] = (int)untechTime[0];
+            globalVariables[20] = (int)untechTime[1];
+        }
+
+        if (tick <= 0)
         {
             lerping = false;
             willRest = false;
@@ -212,7 +261,7 @@ public class GameWorldObject : MonoBehaviour
                     break;
             }
 
-            activateUpon(4);
+            triggerUpon(4);
 
 
             if (curCollision != lastCollision)
@@ -243,13 +292,14 @@ public class GameWorldObject : MonoBehaviour
                     lerpSprite();
         }
 
-        for (int i = 0; i < armatureList.Count; i++)
-            if (renderers[armatureList[i]].enabled)
-            {
-                if (armatures[armatureList[i]].GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
-                    playingAnim = false;
-                break;
-            }
+        if(playingAnim)
+            for (int i = 0; i < armatureList.Count; i++)
+                if (renderers[armatureList[i]].enabled)
+                {
+                    if (armatures[armatureList[i]].GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
+                        playingAnim = false;
+                    break;
+                }
 
         if (!isPlayer)
             return;
@@ -261,49 +311,49 @@ public class GameWorldObject : MonoBehaviour
 
     private void switchSprite()
     {
+        if (!collisions.ContainsKey(curCollision))
+            return;
+        string state = collisions[curCollision].sprites[0].Remove(collisions[curCollision].sprites[0].LastIndexOf("_"));
+        int frame = Int32.Parse(collisions[curCollision].sprites[0].Remove(0, collisions[curCollision].sprites[0].LastIndexOf("_") + 1));
+
+        var stateId = Animator.StringToHash(state);
         if(useArmature)
-        {
-            string state = collisions[curCollision].sprites[0].Remove(collisions[curCollision].sprites[0].LastIndexOf("_"));
-            //Debug.Log(state);
-            int frame = Int32.Parse(collisions[curCollision].sprites[0].Remove(0, collisions[curCollision].sprites[0].LastIndexOf("_") + 1));
-            //Debug.Log(frame);
-            var stateId = Animator.StringToHash(state);
             for (int i = 0; i < armatureList.Count; i++)
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].Play(state, 0, (float)frame / 500 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
-                        2 / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.frameRate));
+                    armatures[armatureList[i]].Play(state, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 0f;
                 }
 
             }
+        else if(spriteAnimator.HasState(0, stateId))
+        {
+            spriteAnimator.Play(state, 0, (float)frame * (1f/12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
+            spriteAnimator.speed = 0f;
         }
     }
 
     private void lerpSprite()
     {
-        if(useArmature)
-        {
-            string state = collisions[lerpCollision].sprites[0].Remove(collisions[lerpCollision].sprites[0].LastIndexOf("_"));
-            int frame = Int32.Parse(collisions[lerpCollision].sprites[0].Remove(0, collisions[lerpCollision].sprites[0].LastIndexOf("_") + 1));
+        string state = collisions[lerpCollision].sprites[0].Remove(collisions[lerpCollision].sprites[0].LastIndexOf("_"));
+        int frame = Int32.Parse(collisions[lerpCollision].sprites[0].Remove(0, collisions[lerpCollision].sprites[0].LastIndexOf("_") + 1));
 
-            var stateId = Animator.StringToHash(state);
+        var stateId = Animator.StringToHash(state);
+        if(useArmature)
             for (int i = 0; i < armatureList.Count; i++)
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].CrossFade(state, 1, 0, (float)frame / 500 / (armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length /
-                        2 / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.frameRate));
+                    armatures[armatureList[i]].CrossFade(state, 1, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 1;
                 }
             }
-        }
     }
 
     private void rotateToCamera()
     {
-        if (faceCamera)
+        if (faceCamera && useArmature)
         { 
             transform.LookAt(cameraMain);
             transform.localEulerAngles = new Vector3(rotation.x, transform.localEulerAngles.y+rotation.y, rotation.z);
@@ -331,15 +381,26 @@ public class GameWorldObject : MonoBehaviour
             xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
         }
 
+        if(hitstun > 0)
+        {
+            xImpulseAdd -= xImpulseAdd / 5; zImpulseAdd -= zImpulseAdd / 5;
+            if((xImpulseAdd < 0 && xImpulse <= 0) || (xImpulseAdd > 0 && xImpulse >= 0))
+            { xImpulse = 0; xImpulseAdd = 0; zImpulse = 0; zImpulseAdd = 0; }
+        }
+
         if(locY <= 0)
         {
             locY = 0;
             yImpulse = 0;
             yImpulseAdd = 0;
-            activateUpon(2);
+            triggerUpon(2);
             if(landToState)
                 commands.enterState(landingState);
         }
+
+        globalVariables[14] = locX;
+        globalVariables[15] = locY;
+        globalVariables[16] = locZ;
 
         transform.localPosition = new Vector3((float)locX / 10000, (float)locY / 10000, (float)locZ / 10000);
     }
@@ -349,26 +410,107 @@ public class GameWorldObject : MonoBehaviour
         transform.localScale = new Vector3(scale.x * dir, scale.y, scale.z);
     }
 
-    public void activateUpon(int type)
+    public void triggerUpon(byte type)
     {
+        bool willDestroy = false;
+        byte? newUpon = null;
         if (uponStatements.ContainsKey(type))
             for (int i = 0; i < uponStatements[type].commands.Count; i++)
-                commands.objSwitchCase(uponStatements[type].commands[i]);
+            {
+                if (uponStatements[type].commands[i].id == 33 && uponStatements[type].commands[i].byteArgs[0] == type)
+                    willDestroy = true;
+                else if (uponStatements[type].commands[i].id == 32)
+                    newUpon = uponStatements[type].commands[i].byteArgs[0];
+                else
+                    commands.objSwitchCase(uponStatements[type].commands[i]);
+            }
+        if (willDestroy)
+            commands.clearUpon(type);
+        if (newUpon != null)
+            triggerUpon((byte)newUpon);
     }
 
     public void boxesCollide(Object_Collision child, Object_Collision hit)
     {
-        switch(child.box.type)
+        switch(hit.box.type)
         {
             case 1:
-                Debug.Log("Child is hurtbox");
+                if (child.box.type == 2)
+                {
+                    willHit = true;
+                    attacking = hit.parent;
+                }
                 break;
-            default:
-                Debug.Log("Child is type " + child.box.type);
+            case 2:
+                if (child.box.type == 1)
+                {
+                    willBeHit = true;
+                    attacker = hit.parent;
+                }
+                else if (child.box.type == 2)
+                    willClash = true;
                 break;
         }
+    }
 
+    private void hitUpdate()
+    {
+        if(willHit)
+        {
+            triggerUpon(6);
+            cancelableStates.AddRange(hitOrBlockCancels);
+            hitstopTick = hitstop;
 
+            if (attacking.armourTypes[attacking.stateType] <= hitTypes[attacking.stateType])
+            {
+                triggerUpon(5);
+                comboCounter++;
+                cancelableStates.AddRange(hitCancels);
+                if (hitEff_type == 0)
+                    Battle_Manager.Instance.commonPlayer.spawnEffect(hitEff_str, hitEff_offset /*+= new
+                        Vector3((hitBoxThatHit.posX - hurtBoxThatWasHit.posX) / 1000, (hitBoxThatHit.posY - hurtBoxThatWasHit.posY) / 250)*/,
+                        hitEff_time, this);
+                else
+                    effectManager.spawnEffect(hitEff_str, hitEff_offset += new Vector3((hitBoxThatHit.posX - 
+                        hurtBoxThatWasHit.posX) / 1000, (hitBoxThatHit.posY - hurtBoxThatWasHit.posY) / 250),
+                        hitEff_time);
+            }
+            else
+            {
+                triggerUpon(7);
+                cancelableStates.AddRange(blockCancels);
+            }
+            willHit = false;
+            stateHasHit = true;
+            hitboxesDisabled = true;
+        }
+
+        if(willBeHit)
+        {
+            hitstopTick = attacker.hitstop;
+            if (armourTypes[stateType] <= attacker.hitTypes[stateType])
+            {
+                xImpulse = attacker.pushBackX;
+                xImpulseAdd = attacker.friction;
+                if (stateType == 2 || attacker.launchOpponent)
+                {
+                    yImpulse = attacker.pushBackY;
+                    yImpulseAdd = attacker.hitGravity;
+                }
+                zImpulse = attacker.pushBackZ;
+                if (zImpulse != 0)
+                    zImpulseAdd = attacker.friction;
+                hitstun = attacker.attackHitstun;
+                globalVariables[18] = hitstun;
+                commands.enterState(hitstunAnims[attacker.hitAnims[stateType]]);
+            }
+            willBeHit = false;
+        }
+    }
+
+    public int getAbsoluteDistance(GameWorldObject p1, GameWorldObject p2)
+    {
+        return p2.locX - p1.locX;
     }
 
     public class InputElement
@@ -641,5 +783,8 @@ public class GameWorldObject : MonoBehaviour
         commands.createVar(0, 14, locX);
         commands.createVar(0, 15, locY);
         commands.createVar(0, 16, locZ);
+        commands.createVar(0, 18, hitstun);
+        commands.createVar(0, 19, (int)untechTime[0]);
+        commands.createVar(0, 20, (int)untechTime[1]);
     }
 }

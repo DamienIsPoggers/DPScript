@@ -15,6 +15,7 @@ namespace DPScript
         public List<float> floatArgs = new List<float>();
         public List<bool> boolArgs = new List<bool>();
         public List<scriptCommand> commands = new List<scriptCommand>();
+        public DPS_MathTypes math;
     }
 
     public class scriptEntry
@@ -36,6 +37,14 @@ namespace DPScript
     {
         public byte type;
         public List<scriptCommand> commands = new List<scriptCommand>();
+
+        public static uponEntry operator +(uponEntry a, uponEntry b)
+        {
+            uponEntry temp = a;
+            for(int i = 0; i < b.commands.Count; i++)
+                a.commands.Add(b.commands[i]);
+            return temp;
+        }
     }
     #endregion
 
@@ -134,6 +143,21 @@ namespace DPScript
         {
             name = stateName;
         }
+    }
+
+    public enum DPS_MathTypes
+    {
+        equals = 0,
+        less = 1,
+        greater = 2,
+        lessEqual = 3,
+        greaterEqual = 4,
+        add = 5,
+        sub = 6,
+        mul = 7,
+        div = 8,
+        remainder = 9,
+        gets = 10,
     }
 
     #endregion

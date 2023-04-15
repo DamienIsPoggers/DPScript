@@ -117,6 +117,10 @@ namespace DPScript
                         position += 4;
                     }
                     break;
+                case 'm':
+                    com.math = (DPS_MathTypes)file.ReadByte();
+                    position++;
+                    break;
             }
 
 

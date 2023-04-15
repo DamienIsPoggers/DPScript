@@ -157,7 +157,7 @@ public class Object_Collision : MonoBehaviour
 
     public void kill()
     {
-        DestroyImmediate(this);
+        Destroy(this);
         Battle_Manager.Instance.collisions.Remove(this);
         parent.loadedCollisions.Remove(this);
     }

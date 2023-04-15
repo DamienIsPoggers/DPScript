@@ -14,6 +14,8 @@ namespace DPScript
         GameWorldObject p;
         [SerializeField]
         GameWorldObject owner;
+        DPS_EffectManager e;
+        DPS_AudioManager a;
 
 
         public void Start()
@@ -21,6 +23,8 @@ namespace DPScript
             o = gameObject.GetComponent<GameWorldObject>();
             owner = o;
             p = o.player;
+            e = gameObject.GetComponent<DPS_EffectManager>();
+            a = gameObject.GetComponent<DPS_AudioManager>();
         }
 
         #region switchCase
@@ -102,6 +106,9 @@ namespace DPScript
                 case 20:
                     editVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
                     break;
+                case 23:
+                    o.returnInt = Convert.ToInt32(compareNum(com));
+                    break;
                 case 24:
                     o.returnInt = Convert.ToInt32(o.input_CanInput(com.byteArgs[0], "", 0, 0));
                     break;
@@ -110,6 +117,21 @@ namespace DPScript
                     break;
                 case 31:
                     uponEnd();
+                    break;
+                case 32:
+                    o.triggerUpon(com.byteArgs[0]);
+                    break;
+                case 33:
+                    clearUpon(com.byteArgs[0]);
+                    break;
+                case 34:
+                    if (com.byteArgs[0] == 0)
+                        Battle_Manager.Instance.commonPlayer.spawnEffect(com.stringArgs[0],
+                            new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
+                            com.uintArgs[0], o);
+                    else
+                        e.spawnEffect(com.stringArgs[0], new Vector3(com.floatArgs[0], 
+                            com.floatArgs[1], com.floatArgs[2]), com.uintArgs[0]);
                     break;
                 case 40:
                     physicsXImpulse(com.byteArgs[0], com.intArgs[0]);
@@ -207,9 +229,62 @@ namespace DPScript
                     Transform focus = null;
                     if (com.byteArgs[0] == 0)
                         focus = o.transform;
-                    CameraManager.Instance.playCameraAnimation(o.cameraAnimator, (float)o.dir, com.stringArgs[0],
+                    CameraManager.Instance.playCameraAnimation(o.cameraAnimator, o.dir, com.stringArgs[0],
                         focus, com.uintArgs[0], com.uintArgs[1], new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
                         new Vector3(com.floatArgs[3], com.floatArgs[4], com.floatArgs[5]));
+                    break;
+                case 150:
+                    attackDamage(com);
+                    break;
+                case 151:
+                    attackPushbackX(com);
+                    break;
+                case 152:
+                    attackPushbackY(com);
+                    break;
+                case 153:
+                    attackPushbackZ(com);
+                    break;
+                case 154:
+                    attackLaunchOpponent(com.boolArgs[0]);
+                    break;
+                case 155:
+                    attackHitFriction(com);
+                    break;
+                case 156:
+                    attackHitGravity(com);
+                    break;
+                case 157:
+                    attackHitAnim(com.byteArgs[0], com.byteArgs[1]);
+                    break;
+                case 158:
+                    attackHitstun(com.intArgs[0]);
+                    break;
+                case 159:
+                    attackHitstop(com.intArgs[0]);
+                    break;
+                case 160:
+                    attackBlockMultiplier(com.floatArgs[0]);
+                    break;
+                case 161:
+                    attackUntechTime(com.byteArgs[0], com.uintArgs[0]);
+                    break;
+                case 162:
+                    attackHardKnockdown(com.uintArgs[0]);
+                    break;
+                case 163:
+                    attackHitEffect(com.byteArgs[0], com.stringArgs[0], new Vector3(com.floatArgs[0],
+                        com.floatArgs[1], com.floatArgs[2]), com.uintArgs[0]);
+                    break;
+                case 164:
+                    attackCounterType(com.byteArgs[0]);
+                    break;
+                case 165:
+                    attackChipDamageMultiplier(com.floatArgs[0]);
+                    break;
+                case 166:
+                    attackUnblockableType(com.byteArgs[0], com.byteArgs[1], com.byteArgs[2],
+                        com.byteArgs[3], com.byteArgs[4], com.byteArgs[5]);
                     break;
             }
         }
@@ -258,10 +333,16 @@ namespace DPScript
             o.rest = true;
         }
 
-        void label(uint pos)
+        public void label(uint pos)
         {
             if(!o.labelPositions.ContainsKey(pos))
                 o.labelPositions.Add(pos, o.scriptPos);
+        }
+
+        public void label(uint pos, int scriptPos)
+        {
+            if (!o.labelPositions.ContainsKey(pos))
+                o.labelPositions.Add(pos, scriptPos);
         }
 
         void sendToLabel(uint pos)
@@ -270,9 +351,9 @@ namespace DPScript
             {
                 bool labelFound = false;
                 for(int i = o.scriptPos + 1; i < o.states[o.curState].commands.Count; i++)
-                    if(o.states[o.curState].commands[i].id == 4)
+                    if(o.states[o.curState].commands[i].id == 4 && o.states[o.curState].commands[i].uintArgs[0] == pos)
                     {
-                        label(o.states[o.curState].commands[i].uintArgs[0]);
+                        label(o.states[o.curState].commands[i].uintArgs[0], i);
                         labelFound = true;
                         break;
                     }
@@ -289,7 +370,7 @@ namespace DPScript
 
         public void enterState(string state)
         {
-            o.activateUpon(1);
+            o.triggerUpon(1);
             o.hitOrBlockCancels.Clear();
             o.hitCancels.Clear();
             o.blockCancels.Clear();
@@ -318,10 +399,11 @@ namespace DPScript
             o.landToState = false;
             o.willRest = false;
             o.switchingState = true;
+            o.launchOpponent = false;
             o.lastState = o.curState;
             o.curState = state;
 
-            if (o.stateCancels[state].common > 0)
+            if (o.commonSubroutines.ContainsKey(state))
                 cmnSubroutine(state);
         }
 
@@ -361,7 +443,7 @@ namespace DPScript
         public void editVar(byte table, int id, int data)
         {
             if (table == 0)
-                if (id <= 16)
+                if (id <= 21)
                     return;
                 else
                     o.globalVariables[id] = data;
@@ -375,6 +457,73 @@ namespace DPScript
             if(randomNum >= min && randomNum <= max)
                 return randomNum;
             return 0;
+        }
+
+        public bool compareNum(scriptCommand com)
+        {
+            byte comNum = 0;
+            byte intNum = 0;
+            int num1 = 0;
+            switch(com.byteArgs[0])
+            {
+                case 0:
+                    num1 = o.globalVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 1:
+                    num1 = o.tempVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[comNum]);
+                    comNum++;
+                    num1 = o.returnInt;
+                    break;
+                case 3:
+                    num1 = o.opponent.globalVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 4:
+                    num1 = com.intArgs[0];
+                    intNum++;
+                    break;
+            }
+
+            int num2 = 0;
+            switch (com.byteArgs[1])
+            {
+                case 0:
+                    num2 = o.globalVariables[com.intArgs[intNum]];
+                    break;
+                case 1:
+                    num2 = o.tempVariables[com.intArgs[intNum]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[comNum]);
+                    num2 = o.returnInt;
+                    break;
+                case 3:
+                    num2 = o.opponent.globalVariables[com.intArgs[intNum]];
+                    break;
+                case 4:
+                    num2 = com.intArgs[intNum];
+                    break;
+            }
+
+            switch(com.math)
+            {
+                default:
+                case DPS_MathTypes.equals:
+                    return num1 == num2;
+                case DPS_MathTypes.less:
+                    return num1 < num2;
+                case DPS_MathTypes.greater:
+                    return num1 > num2;
+                case DPS_MathTypes.lessEqual:
+                    return num1 <= num2;
+                case DPS_MathTypes.greaterEqual:
+                    return num1 >= num2;
+            }
         }
 
         public void physicsXImpulse(byte type, int amount)
@@ -601,6 +750,8 @@ namespace DPScript
 
         public void exitState()
         {
+            if (o.curState == "CmnHitstunStd")
+                Debug.Log("Leaving hit");
             enterState(o.nextState);
         }
 
@@ -640,10 +791,10 @@ namespace DPScript
                 switch(com.byteArgs[0])
                 {
                     case 0:
-                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        checkNum = o.globalVariables[com.intArgs[0]];
                         break;
                     case 1:
-                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        checkNum = o.tempVariables[com.intArgs[0]];
                         break;
                 }
             }
@@ -652,6 +803,11 @@ namespace DPScript
             {
                 ifFailed = true;
                 canElse = true;
+            }
+            else
+            {
+                ifFailed = false;
+                canElse = false;
             }
         }
 
@@ -684,18 +840,23 @@ namespace DPScript
                 switch (com.byteArgs[0])
                 {
                     case 0:
-                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        checkNum = o.globalVariables[com.intArgs[0]];
                         break;
                     case 1:
-                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        checkNum = o.tempVariables[com.intArgs[0]];
                         break;
                 }
             }
 
-            if (checkNum! > 0)
+            if (checkNum <= 0)
             {
                 ifFailed = true;
                 canElse = true;
+            }
+            else
+            {
+                ifFailed = false;
+                canElse = false;
             }
         }
 
@@ -720,10 +881,10 @@ namespace DPScript
                 switch (com.byteArgs[0])
                 {
                     case 0:
-                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        checkNum = o.globalVariables[com.intArgs[0]];
                         break;
                     case 1:
-                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        checkNum = o.tempVariables[com.intArgs[0]];
                         break;
                 }
             }
@@ -733,7 +894,11 @@ namespace DPScript
                 ifFailed = true;
                 canElse = true;
             }
-            //Debug.Log(ifFailed);
+            else
+            {
+                ifFailed = false;
+                canElse = false;
+            }    
         }
 
         void elseIfNot(scriptCommand com)
@@ -757,18 +922,23 @@ namespace DPScript
                 switch (com.byteArgs[0])
                 {
                     case 0:
-                        //checkNum = BitConverter.ToInt32(o.golbalVariables[com.intArgs[0]], 0);
+                        checkNum = o.globalVariables[com.intArgs[0]];
                         break;
                     case 1:
-                        //checkNum = BitConverter.ToInt32(o.tempVariables[com.intArgs[0]], 0);
+                        checkNum = o.tempVariables[com.intArgs[0]];
                         break;
                 }
             }
 
-            if (checkNum! > 0)
+            if (checkNum > 0)
             {
                 ifFailed = true;
                 canElse = true;
+            }
+            else
+            {
+                ifFailed = false;
+                canElse = false;
             }
         }
 
@@ -862,8 +1032,225 @@ namespace DPScript
 
         private void uponEnd()
         {
+            if (o.uponStatements.ContainsKey(uponCode.type))
+                o.uponStatements.Remove(uponCode.type);
             o.uponStatements.Add(uponCode.type, uponCode);
             isInUpon = false;
+        }
+
+        public void clearUpon(byte type)
+        {
+            o.uponStatements.Remove(type);
+        }
+
+        #endregion
+
+        #region attack stuffs
+
+        public void attackDamage(scriptCommand com)
+        {
+            switch(com.byteArgs[0])
+            {
+                case 0:
+                    o.damage = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.damage = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.damage = o.returnInt;
+                    break;
+                case 3:
+                    o.damage = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.damage = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackPushbackX(scriptCommand com)
+        {
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    o.pushBackX = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.pushBackX = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.pushBackX = o.returnInt;
+                    break;
+                case 3:
+                    o.pushBackX = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.pushBackX = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackPushbackY(scriptCommand com)
+        {
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    o.pushBackY = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.pushBackY = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.pushBackY = o.returnInt;
+                    break;
+                case 3:
+                    o.pushBackY = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.pushBackY = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackPushbackZ(scriptCommand com)
+        {
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    o.pushBackZ = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.pushBackZ = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.pushBackZ = o.returnInt;
+                    break;
+                case 3:
+                    o.pushBackZ = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.pushBackZ = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackLaunchOpponent(bool b)
+        {
+            o.launchOpponent = b;
+        }
+
+        public void attackHitFriction(scriptCommand com)
+        {
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    o.friction = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.friction = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.friction = o.returnInt;
+                    break;
+                case 3:
+                    o.friction = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.friction = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackHitGravity(scriptCommand com)
+        {
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    o.hitGravity = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    o.hitGravity = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    o.hitGravity = o.returnInt;
+                    break;
+                case 3:
+                    o.hitGravity = o.opponent.globalVariables[com.intArgs[0]];
+                    break;
+                case 4:
+                    o.hitGravity = com.intArgs[0];
+                    break;
+            }
+        }
+
+        public void attackHitAnim(byte type, byte anim)
+        {
+            if (type > o.hitAnims.Length)
+                return;
+            o.hitAnims[type] = anim;
+        }
+
+        public void attackHitstun(int amount)
+        {
+            o.attackHitstun = amount;
+        }
+
+        public void attackHitstop(int amount)
+        {
+            o.hitstop = amount;
+        }
+
+        public void attackBlockMultiplier(float amount)
+        {
+            o.blockMultiplier = amount;
+        }
+
+        public void attackUntechTime(byte type, uint amount)
+        {
+            if (type > 1)
+                type = 1;
+            o.untechTime[type] = amount;
+        }
+
+        public void attackHardKnockdown(uint time)
+        {
+            o.hardKnockdown = time;
+        }
+
+        public void attackHitEffect(byte type, string effect, Vector3 offset, uint time)
+        {
+            o.hitEff_type = type;
+            o.hitEff_str = effect;
+            o.hitEff_offset = offset;
+            o.hitEff_time = time;
+        }
+
+        public void attackCounterType(byte type)
+        {
+            o.counterType = type;
+        }
+
+        public void attackChipDamageMultiplier(float amount)
+        {
+            o.chipMultiplier = amount;
+        }
+
+        public void attackUnblockableType(byte mid, byte crouch, byte air, 
+            byte grab, byte projectile, byte arg6)
+        {
+            o.hitTypes[0] = mid;
+            o.hitTypes[1] = crouch;
+            o.hitTypes[2] = air;
+            o.hitTypes[3] = grab;
+            o.hitTypes[4] = projectile;
+            o.hitTypes[5] = arg6;
         }
 
         #endregion

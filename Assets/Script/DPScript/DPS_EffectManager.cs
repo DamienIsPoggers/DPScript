@@ -11,14 +11,16 @@ namespace DPScript
         List<GameObject> effectList = new List<GameObject>();
         [SerializeField]
         List<string> effectNames = new List<string>();
+        public GameObject effectSpawner;
 
-        List<GameObject> effectsSpawned = new List<GameObject>();
-        List<uint> effectsCountdown = new List<uint>();
+        public List<GameObject> effectsSpawned = new List<GameObject>();
+        public List<uint> effectsCountdown = new List<uint>();
 
         void Start()
         {
             for (int i = 0; i < effectList.Count; i++)
                 effects.Add(effectNames[i], effectList[i]);
+            effectSpawner = transform.Find("Effects").gameObject;
         }
 
         void Update()
@@ -41,7 +43,8 @@ namespace DPScript
             if (!effects.ContainsKey(name))
                 return;
 
-            effectsSpawned.Add(Instantiate(effects[name], transform.position + offset, transform.rotation, transform));
+            effectsSpawned.Add(Instantiate(effects[name], effectSpawner.transform.position + offset, 
+                effectSpawner.transform.rotation, effectSpawner.transform));
             effectsCountdown.Add(destroyTime);
         }
     }

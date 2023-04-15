@@ -10,8 +10,8 @@ namespace DPScript
         List<AudioClip> soundList = new List<AudioClip>(), voiceList = new List<AudioClip>();
         [SerializeField]
         List<string> soundNames = new List<string>(), voiceNames = new List<string>();
-        AudioSource voiceParent;
-        Transform soundsParent;
+        public AudioSource voiceParent;
+        public Transform soundsParent;
 
         void Start()
         {

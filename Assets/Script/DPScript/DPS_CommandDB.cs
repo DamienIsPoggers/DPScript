@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -78,6 +79,9 @@ namespace DPScript
                 case 20:
                     temp.args = new string[] { "1h", "2i" };
                     break;
+                case 23:
+                    temp.args = new string[] { "1h", "1c", "1m", "1h", "1c" };
+                    break;
                 case 24:
                     temp.args = new string[] { "1h" };
                     break;
@@ -86,6 +90,13 @@ namespace DPScript
                     break;
                 case 31:
                     temp.args = new string[] { "1n" };
+                    break;
+                case 32:
+                case 33:
+                    temp.args = new string[] { "1h" };
+                    break;
+                case 34:
+                    temp.args = new string[] { "1h", "1s", "3f", "1u" };
                     break;
                 case 40:
                 case 41:
@@ -160,6 +171,47 @@ namespace DPScript
                     break;
                 case 128:
                     temp.args = new string[] { "1u", "1s", "3i" };
+                    break;
+                case 150:
+                case 151:
+                case 152:
+                case 153:
+                    temp.args = new string[] { "1h", "1c" };
+                    break;
+                case 154:
+                    temp.args = new string[] { "1b" };
+                    break;
+                case 155:
+                case 156:
+                    temp.args = new string[] { "1h", "1c" };
+                    break;
+                case 157:
+                    temp.args = new string[] { "2h" };
+                    break;
+                case 158:
+                case 159:
+                    temp.args = new string[] { "1i" };
+                    break;
+                case 160:
+                    temp.args = new string[] { "1f" };
+                    break;
+                case 161:
+                    temp.args = new string[] { "1h", "1u" };
+                    break;
+                case 162:
+                    temp.args = new string[] { "1u" };
+                    break;
+                case 163:
+                    temp.args = new string[] { "1h", "1s", "3f", "1u" };
+                    break;
+                case 164:
+                    temp.args = new string[] { "1h" };
+                    break;
+                case 165:
+                    temp.args = new string[] { "1f" };
+                    break;
+                case 166:
+                    temp.args = new string[] { "6h" };
                     break;
             }
 

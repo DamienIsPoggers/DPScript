@@ -227,7 +227,7 @@ public class ASWGuiltyGearStriveGUI : ShaderGUI
 
   int popupIndex = 0;
   string presetText = "";
-  string dirPath = "Assets/Resources/Shaders/Arc System Works Shader/Presets/";
+  string dirPath = "Assets/Shaders/Arc System Works Shader/Presets/";
 
   public override void OnGUI(MaterialEditor me, MaterialProperty[] props)
   {

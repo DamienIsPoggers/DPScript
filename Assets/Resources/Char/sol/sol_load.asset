@@ -12,7 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f65590532656e27479ae2da13b2758f8, type: 3}
   m_Name: sol_load
   m_EditorClassIdentifier: 
-  scriptLoad: []
-  colLoad: []
-  cmnScriptLoad: []
-  prefabLoad: []
+  scriptLoad:
+  - {fileID: 4900000, guid: 825b2d96f2f9e4441885516a0ea3e2ba, type: 3}
+  cmnScriptLoad:
+  - {fileID: 4900000, guid: 0a641a0c8cf002f4ca90c1c0446d7f15, type: 3}
+  colLoad:
+  - {fileID: 4900000, guid: f32b33e6b4826f64ca12d209b2b263b7, type: 3}
+  prefab: {fileID: 52519502154221560, guid: 1d4da7c0aaddc2244ad4cd6bc45c72e8, type: 3}
+  materials: {fileID: 11400000, guid: 4c972be0f7b42294683b108961653e01, type: 2}
