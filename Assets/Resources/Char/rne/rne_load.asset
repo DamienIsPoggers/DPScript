@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65590532656e27479ae2da13b2758f8, type: 3}
+  m_Name: rne_load
+  m_EditorClassIdentifier: 
+  scriptLoad:
+  - {fileID: 4900000, guid: 757c2ad4e39b09c4b87a7a8219ce214f, type: 3}
+  cmnScriptLoad:
+  - {fileID: 4900000, guid: 0a641a0c8cf002f4ca90c1c0446d7f15, type: 3}
+  colLoad:
+  - {fileID: 4900000, guid: ad3e12c829d6afb499c771b0ec0f5440, type: 3}
+  prefab: {fileID: 1631300684478086675, guid: 8742d9e258c31b44bb15de16888cbbb6, type: 3}
+  materials: {fileID: 0}

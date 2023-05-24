@@ -6,6 +6,8 @@ public class Effect : MonoBehaviour
 {
     [SerializeField]
     bool lookAtCamera = true;
+    [SerializeField]
+    bool isSprite = false;
 
     void Start()
     {
@@ -15,7 +17,11 @@ public class Effect : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(lookAtCamera)
+        if (lookAtCamera)
+        {
             transform.LookAt(CameraManager.Instance.cam.transform);
+            if (isSprite)
+                transform.localEulerAngles += new Vector3(0, 180, 0);
+        }
     }
 }

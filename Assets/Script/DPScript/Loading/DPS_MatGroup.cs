@@ -7,7 +7,7 @@ namespace DPScript.Loading
     [CreateAssetMenu(menuName = "DPScript Load/Battle Object/Material Group")]
     public class DPS_MatGroup : ScriptableObject
     {
-        public List<Material> materials;
-        public List<string> names;
+        public List<DPS_ObjectMat> materials;
+        public bool locked = false;
     }
 }

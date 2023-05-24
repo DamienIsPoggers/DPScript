@@ -4,12 +4,13 @@ using UnityEngine;
 using DPScript;
 using DPScript.Loading;
 using System.Linq;
+using UnityEditor;
 
 public class Objects_Load
 {
     DPS_FileReader fileReader = new DPS_FileReader();
 
-    public void mainLoad(DPS_ObjectLoad load, int color)
+    public IEnumerator mainLoad(DPS_ObjectLoad load, int color)
     {
         GameObject character = Object.Instantiate(load.prefab);
         GameWorldObject o = character.GetComponent<GameWorldObject>();
@@ -43,16 +44,18 @@ public class Objects_Load
                 o.collisions.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
         }
 
-        DPS_MatGroup mat = load.materials.mats[color];
+        if (load.materials.mats.Count == 0)
+            yield break;
+
         if(o.useArmature)
-            for(int i = 0; i < o.renderers.Count; i++)
-                for(int j = 0; j < o.renderers[o.armatureList[i]].materials.Length; j++)
-                {
-                    if (mat.names.Contains(o.renderers[o.armatureList[i]].materials[j].name))
-                        o.renderers[o.armatureList[i]].materials[j] = mat.materials[mat.names.IndexOf(o.renderers[o.armatureList[i]].materials[j].name)];
-                    else
-                        o.renderers[o.armatureList[i]].materials[j] = mat.materials[0];
-                }
+            for(int i = 0; i < load.materials.mats[color].materials.Count; i++)
+            {
+                DPS_ObjectMat mat = load.materials.mats[color].materials[i];
+                if (!o.renderers.ContainsKey(mat.name))
+                    continue;
+                o.renderers[mat.name].materials = mat.materials.ToArray();
+            }
+                
     }
 
     public void debugLoad(string path, GameWorldObject o, string id, bool debug = false)

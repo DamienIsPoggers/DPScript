@@ -292,14 +292,20 @@ public class GameWorldObject : MonoBehaviour
                     lerpSprite();
         }
 
-        if(playingAnim)
-            for (int i = 0; i < armatureList.Count; i++)
-                if (renderers[armatureList[i]].enabled)
-                {
-                    if (armatures[armatureList[i]].GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
+        if (playingAnim)
+        {
+            if (useArmature)
+                for (int i = 0; i < armatureList.Count; i++)
+                    if (renderers[armatureList[i]].enabled)
+                    {
+                        if (armatures[armatureList[i]].GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
+                            playingAnim = false;
+                        break;
+                    }
+            else
+                if (spriteAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
                         playingAnim = false;
-                    break;
-                }
+        }
 
         if (!isPlayer)
             return;

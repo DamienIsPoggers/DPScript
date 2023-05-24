@@ -93,7 +93,7 @@ public class DebugMenu : MonoBehaviour
                     ImGui.InputInt("Color", ref objectSpawnColor);
                     if (ImGui.Button("Spawn"))
                     {
-                        loading.mainLoad(Resources.Load<DPS_ObjectLoad>(Encoding.ASCII.GetString(objectToSpawn).Replace("\0", string.Empty)), objectSpawnColor);
+                        StartCoroutine(loading.mainLoad(Resources.Load<DPS_ObjectLoad>(Encoding.ASCII.GetString(objectToSpawn).Replace("\0", string.Empty)), objectSpawnColor));
                         soundToPlay.Add(new byte[32]);
                         stateToEnter.Add(new byte[32]);
                         effectToCall.Add(new byte[32]);
@@ -144,6 +144,8 @@ public class DebugMenu : MonoBehaviour
 
                     if(ImGui.TreeNode("Player Settings"))
                     {
+                        ImGui.Checkbox("Ignore Inputs", ref Battle_Manager.Instance.players[i].ignoreInputs);
+
                         ImGui.SetNextItemWidth(150f);
                         ImGui.InputText("State to enter", stateToEnter[i], 32);
                         if (ImGui.Button("Enter"))

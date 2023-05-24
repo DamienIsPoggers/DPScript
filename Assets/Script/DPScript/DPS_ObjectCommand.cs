@@ -757,12 +757,19 @@ namespace DPScript
 
         public void playAnimation(string state, float speed)
         {
-            for(int i = 0; i < o.armatureList.Count; i++)
+            o.playingAnim = true;
+            if(o.useArmature)
+                for(int i = 0; i < o.armatureList.Count; i++)
+                {
+                    if (!o.renderers[o.armatureList[i]].enabled)
+                        continue;
+                    o.armatures[o.armatureList[i]].Play(state, 0);
+                    o.armatures[o.armatureList[i]].speed = speed;
+                }
+            else
             {
-                if (!o.renderers[o.armatureList[i]].enabled)
-                    continue;
-                o.armatures[o.armatureList[i]].Play(state);
-                o.armatures[o.armatureList[i]].speed = speed;
+                o.spriteAnimator.Play(state, 0);
+                o.spriteAnimator.speed = speed;
             }
         }
 

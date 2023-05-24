@@ -149,6 +149,7 @@ MonoBehaviour:
   useArmature: 0
   armatureList: []
   cameraAnimator: {fileID: 0}
+  spriteAnimator: {fileID: 0}
   loadedCollisions: []
   hitOrBlockCancels: []
   hitCancels: []
@@ -261,6 +262,7 @@ GameObject:
   - component: {fileID: 4537526998985211340}
   - component: {fileID: 477554907806686866}
   - component: {fileID: 4186568685361127068}
+  - component: {fileID: 1220924188578107160}
   m_Layer: 0
   m_Name: Sprites
   m_TagString: Untagged
@@ -352,6 +354,21 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
+--- !u!114 &1220924188578107160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5565873359240084099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75a7ec0b9e81ae344bd06d3ca6a48a1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  colors: {fileID: 0}
+  run: 0
+  spriteRenderer: {fileID: 477554907806686866}
 --- !u!1 &7456886091539743914
 GameObject:
   m_ObjectHideFlags: 0
