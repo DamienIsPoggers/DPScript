@@ -44,8 +44,7 @@ namespace DPScript
         {
             if (soundList.Count <= id)
                 return;
-            GameObject sound = new GameObject();
-            sound.transform.parent = soundsParent;
+            GameObject sound = Instantiate(new GameObject(), soundsParent.position, soundsParent.rotation, soundsParent);
             sound.AddComponent<AudioSource>();
             sound.GetComponent<AudioSource>().clip = soundList[id];
             sound.GetComponent<AudioSource>().Play();

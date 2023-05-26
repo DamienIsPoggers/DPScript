@@ -6,7 +6,6 @@ using ImGuiNET;
 using System.Drawing;
 using Steamworks;
 using UnityEngine.UI;
-using Autodesk.Fbx;
 
 public class HitboxOverlay : MonoBehaviour
 {
@@ -28,12 +27,17 @@ public class HitboxOverlay : MonoBehaviour
 
         ImGui.GetWindowDrawList().AddQuadFilled(Vector2.right, Vector2.up, Vector2.left, Vector2.down, 0xFFFF0000);
 
+        /*
         foreach (Object_Collision box in Battle_Manager.Instance.collisions)
         {
-            Vector2 pointA = new Vector2((box.posX - box.distanceX) / 100, (box.posY + box.distanceY) / 250);
-            Vector2 pointB = new Vector2((box.posX + box.distanceX) / 100, (box.posY + box.distanceY) / 250);
-            Vector2 pointC = new Vector2((box.posX + box.distanceX) / 100, (box.posY - box.distanceY) / 250);
-            Vector2 pointD = new Vector2((box.posX - box.distanceX) / 100, (box.posY - box.distanceY) / 250);
+            Vector2 pointA = new Vector2(((box.baseBox.x / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir, 
+                ((box.baseBox.y / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
+            Vector2 pointB = new Vector2((((box.baseBox.x + box.baseBox.width) / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
+                ((box.baseBox.y / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
+            Vector2 pointC = new Vector2((((box.baseBox.x + box.baseBox.width) / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
+                (((box.baseBox.y = box.baseBox.height) / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
+            Vector2 pointD = new Vector2(((box.baseBox.x / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
+                (((box.baseBox.y + box.baseBox.height) / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
 
             pointA = Camera.main.WorldToScreenPoint(pointA);
             pointB = Camera.main.WorldToScreenPoint(pointB);
@@ -43,7 +47,7 @@ public class HitboxOverlay : MonoBehaviour
             Debug.Log(pointA.ToString());
 
             uint outlineColor, boxColor;
-            switch(box.box.type)
+            switch(box.type)
             {
                 default:
                     outlineColor = 0xFFFFFFFF;
@@ -66,5 +70,7 @@ public class HitboxOverlay : MonoBehaviour
             ImGui.GetWindowDrawList().AddQuad(pointA, pointB, pointC, pointD, outlineColor, 1);
             ImGui.GetWindowDrawList().AddQuadFilled(pointA, pointB, pointC, pointD, boxColor);
         }
+        */
+        
     }
 }

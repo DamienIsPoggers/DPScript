@@ -8,8 +8,6 @@ public class Battle_Manager : MonoBehaviour
 {
     public static Battle_Manager Instance;
 
-    public List<Object_Collision> collisions = new List<Object_Collision>();
-
     public bool superFreeze = false;
     public List<DPS_Stage> stages = new List<DPS_Stage>();
     public bool spriteCharacterOnScreen = false;

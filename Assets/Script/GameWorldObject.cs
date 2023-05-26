@@ -24,6 +24,7 @@ public class GameWorldObject : MonoBehaviour
     DPS_AudioManager audioManager;
     DPS_EffectManager effectManager;
     Transform cameraMain;
+    Transform meshParent;
 
     GameObject CollisionChild;
 
@@ -131,6 +132,7 @@ public class GameWorldObject : MonoBehaviour
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
         playerControls = new PlayerControls();
+        meshParent = transform.Find("Mesh");
 
         for (int i = 0; i < armatureList.Count; i++)
         {
@@ -273,17 +275,20 @@ public class GameWorldObject : MonoBehaviour
                     for (int i = 0; i < collisions[lastCollision].boxCount; i++)
                         loadedCollisions[0].kill();
 
-                if(collisions.ContainsKey(curCollision))
-                for (int i = 0; i < collisions[curCollision].boxCount; i++)
-                {
-                    Object_Collision temp = CollisionChild.AddComponent<Object_Collision>();
-                    temp.init(collisions[curCollision].boxes[i], collisions[curCollision].hasZ,
-                        collisions[curCollision].sphere, this, this);
-                    loadedCollisions.Add(temp);
-                    Battle_Manager.Instance.collisions.Add(temp);
-                    //Debug.Log(i);
-                }
-
+                if (collisions.ContainsKey(curCollision))
+                    for (int i = 0; i < collisions[curCollision].boxCount; i++)
+                    {
+                        GameObject col = new GameObject();
+                        col.transform.position = transform.position;
+                        col.transform.rotation = transform.rotation;
+                        if (dir == -1)
+                            col.transform.Rotate(0, 180, 0);
+                        col.transform.localScale = scale;
+                        col.transform.parent = CollisionChild.transform;
+                        Object_Collision temp = col.AddComponent<Object_Collision>();
+                        temp.init(collisions[curCollision].boxes[i], collisions[curCollision].sphere, this, this);
+                        loadedCollisions.Add(temp);
+                    }
                 
             }
 
@@ -360,12 +365,13 @@ public class GameWorldObject : MonoBehaviour
     private void rotateToCamera()
     {
         if (faceCamera && useArmature)
-        { 
-            transform.LookAt(cameraMain);
-            transform.localEulerAngles = new Vector3(rotation.x, transform.localEulerAngles.y+rotation.y, rotation.z);
+        {
+            meshParent.LookAt(cameraMain);
+            meshParent.localEulerAngles = new Vector3(0, meshParent.localEulerAngles.y, 0);
         }
         else
-            transform.localEulerAngles = rotation;
+            meshParent.localEulerAngles = Vector3.zero;
+        transform.localEulerAngles = rotation;
     }
 
     private void positionUpdate()
@@ -414,6 +420,7 @@ public class GameWorldObject : MonoBehaviour
     private void scaleUpdate()
     {
         transform.localScale = new Vector3(scale.x * dir, scale.y, scale.z);
+        CollisionChild.transform.localScale.Set(Mathf.Abs(scale.x), scale.y, scale.z);
     }
 
     public void triggerUpon(byte type)
@@ -477,8 +484,8 @@ public class GameWorldObject : MonoBehaviour
                         Vector3((hitBoxThatHit.posX - hurtBoxThatWasHit.posX) / 1000, (hitBoxThatHit.posY - hurtBoxThatWasHit.posY) / 250)*/,
                         hitEff_time, this);
                 else
-                    effectManager.spawnEffect(hitEff_str, hitEff_offset += new Vector3((hitBoxThatHit.posX - 
-                        hurtBoxThatWasHit.posX) / 1000, (hitBoxThatHit.posY - hurtBoxThatWasHit.posY) / 250),
+                    effectManager.spawnEffect(hitEff_str, hitEff_offset /*+= new Vector3((hitBoxThatHit.posX - 
+                        hurtBoxThatWasHit.posX) / 1000, (hitBoxThatHit.posY - hurtBoxThatWasHit.posY) / 250)*/,
                         hitEff_time);
             }
             else
@@ -696,20 +703,17 @@ public class GameWorldObject : MonoBehaviour
         {
             if (_input.Length == 1 && lieniant == 0)
             {
-                if (_input[0] == 5)
+                switch(_input[0])
                 {
-                    if (currInput.inputType == 5 || currInput.inputType == 4 || currInput.inputType == 6) return true;
-                    else return false;
-                }
-                else if (_input[0] == 2)
-                {
-                    if (currInput.inputType == 2 || currInput.inputType == 1 || currInput.inputType == 3) return true;
-                    else return false;
-                }
-                else if (_input[0] == 8)
-                {
-                    if (currInput.inputType == 8 || currInput.inputType == 7 || currInput.inputType == 9) return true;
-                    else return false;
+                    case 5:
+                        if (currInput.inputType == 5 || currInput.inputType == 4 || currInput.inputType == 6) return true;
+                        else return false;
+                    case 2:
+                        if (currInput.inputType == 2 || currInput.inputType == 1 || currInput.inputType == 3) return true;
+                        else return false;
+                    case 8:
+                        if (currInput.inputType == 8 || currInput.inputType == 7 || currInput.inputType == 9) return true;
+                        else return false;
                 }
             }
             else if (currInput.inputType != _input[_input.Length - 1]) return false;
@@ -725,46 +729,48 @@ public class GameWorldObject : MonoBehaviour
             }
         }
 
-        if (_input.Length == 0) return true;
         if (buffer.Count >= _input.Length)
         {
-            if (_input.Length == 1) return true;
-            else if (_input.Length == 2)
+            switch(_input.Length)
             {
-                if (buffer[startBuf].inputType == _input[0] && buffer[startBuf + 1].inputType == 5 &&
-                    buffer[startBuf + 2].inputType == _input[1]) return true;
-            }
-            else
-            {
-                bool multiTap = false;
-                for (int i = 0; i < _input.Length - 1; i++)
-                {
-                    if (_input[i] != _input[i + 1]) { multiTap = false; break; }
-                    multiTap = true;
-                }
+                case 0:
+                case 1:
+                    return true;
+                case 2:
+                    if (buffer[startBuf].inputType == _input[0] && buffer[startBuf + 1].inputType == 5 &&
+                        buffer[startBuf + 2].inputType == _input[1]) return true;
+                    break;
+                default:
+                    bool multiTap = false;
+                    for (int i = 0; i < _input.Length - 1; i++)
+                    {
+                        if (_input[i] != _input[i + 1]) { multiTap = false; break; }
+                        multiTap = true;
+                    }
 
-                int taps = 0;
-                if (multiTap)
-                {
-                    for (int i = startBuf; i < buffer.Count; i++)
+                    int taps = 0;
+                    if (multiTap)
                     {
-                        if (taps >= _input.Length) break;
-                        if (buffer[i].inputType == _input[taps]) taps++;
-                        else if (buffer[i].inputType != 5) break;
+                        for (int i = startBuf; i < buffer.Count; i++)
+                        {
+                            if (taps >= _input.Length) break;
+                            if (buffer[i].inputType == _input[taps]) taps++;
+                            else if (buffer[i].inputType != 5) break;
+                        }
                     }
-                }
-                else
-                {
-                    int misInput = _input.Length - 4;
-                    for (int i = startBuf; i < buffer.Count; i++)
+                    else
                     {
-                        if (taps >= _input.Length) break;
-                        if (buffer[i].inputType == _input[taps]) taps++;
-                        else if (misInput > 0) misInput--;
-                        else break;
+                        int misInput = _input.Length - 4;
+                        for (int i = startBuf; i < buffer.Count; i++)
+                        {
+                            if (taps >= _input.Length) break;
+                            if (buffer[i].inputType == _input[taps]) taps++;
+                            else if (misInput > 0) misInput--;
+                            else break;
+                        }
                     }
-                }
-                if (taps >= _input.Length) return true;
+                    if (taps >= _input.Length) return true;
+                    break;
             }
         }
         return false;
