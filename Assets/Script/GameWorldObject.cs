@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using DPScript;
 using System;
-using UnityEditor.Animations;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 public class GameWorldObject : MonoBehaviour
 {
@@ -33,7 +33,8 @@ public class GameWorldObject : MonoBehaviour
     Object_Collision hitBoxThatHit, hurtBoxThatWasHit;
 
     public int curHealth = 1, maxHealth = 1;
-    public int tick = 0, hitstopTick = 0, dir = 1, onStage = 0, scriptPos = 0;
+    public int tick = 0, hitstopTick = 0, onStage = 0, scriptPos = 0;
+    public ObjectDir dir = (ObjectDir)1;
     public string curState = "", lastState = "", nextState = "", landingState = "";
     public bool landToState = false;
     public string curCollision = "", lastCollision = "", lerpCollision = "";
@@ -61,6 +62,7 @@ public class GameWorldObject : MonoBehaviour
     public byte[] armourTypes = { 0, 0, 0, 0, 0, 0 };
     public bool friendlyFire = false; //doesnt work if they are on the same parent
     public bool isProjectile = false;
+    public string objectStartState = "CmnStand";
     public bool isPlayer = true, isActive = true;
     public bool willHit = false, willBeHit = false, willClash = false;
     public uint superFreezeTime = 0;
@@ -92,11 +94,11 @@ public class GameWorldObject : MonoBehaviour
     private List<InputElement> buffer = new List<InputElement>();
 
     //some various variables for misc stuff
-    public int[] walkingSpeed = new int[] { 400, -300 }; //fwalk, bwalk
-    public int[] dashSpeed = new int[] { 600, 40, 820 }; //inital speed, accel, max
+    public int[] walkingSpeed = new int[] { 4000, -3000 }; //fwalk, bwalk
+    public int[] dashSpeed = new int[] { 6000, 400, 8200 }; //inital speed, accel, max
     public int[] airActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
-    public int[] jumpSpeed = new int[] { 500, -500, 1500 }; //fspeed, bspeed, height
-    public int defaultGravity = -90;
+    public int[] jumpSpeed = new int[] { 5000, -5000, 15000 }; //fspeed, bspeed, height
+    public int defaultGravity = -900;
 
     public int hitstun = 0;
 
@@ -114,6 +116,10 @@ public class GameWorldObject : MonoBehaviour
     public Vector3 hitEff_offset = Vector3.zero;
     public uint hitEff_time = 0;
 
+    public string killCamAnim = "";
+    public byte killCamAnimType = 0;
+    public Vector3 killCamAnimOffset = Vector3.zero, killCamAnimRot = Vector3.zero;
+    public int killCamAnimBlendInTime = 0, killCamAnimBlendOutTime = 0;
 
 
     [SerializeField]
@@ -126,7 +132,7 @@ public class GameWorldObject : MonoBehaviour
 
     private void Awake()
     {
-        commands = gameObject.AddComponent<DPS_ObjectCommand>();
+        commands = gameObject.GetComponent<DPS_ObjectCommand>();
         audioManager = gameObject.GetComponent<DPS_AudioManager>();
         effectManager = gameObject.GetComponent<DPS_EffectManager>();
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
@@ -136,9 +142,9 @@ public class GameWorldObject : MonoBehaviour
 
         for (int i = 0; i < armatureList.Count; i++)
         {
-            armatures.Add(armatureList[i], transform.Find("Mesh").transform.Find(armatureList[i]).GetComponent<Animator>());
-            armatures[armatureList[i]].speed = 0.005f;
-            renderers.Add(armatureList[i], transform.Find("Mesh").transform.Find(armatureList[i]).GetComponentInChildren<SkinnedMeshRenderer>());
+            armatures.Add(armatureList[i], meshParent.Find(armatureList[i]).GetComponent<Animator>());
+            armatures[armatureList[i]].speed = 0;
+            renderers.Add(armatureList[i], meshParent.Find(armatureList[i]).GetComponentInChildren<SkinnedMeshRenderer>());
         }
 
         CollisionChild = transform.Find("Collision").gameObject;
@@ -157,6 +163,9 @@ public class GameWorldObject : MonoBehaviour
     private void Start()
     { 
         Application.targetFrameRate = 60;
+
+        if (!isPlayer)
+            return;
 
         for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
             world.Add(Battle_Manager.Instance.stages[i].id, Battle_Manager.Instance.stages[i]);
@@ -180,14 +189,20 @@ public class GameWorldObject : MonoBehaviour
         //input_DebugBuffer();
         if(!initalized)
         {
+            commands.enterState(objectStartState);
+            if(!isPlayer)
+            {
+                initalized = true;
+                return;
+            }
             commands.callSubroutine("init");
             commands.cmnSubroutine("cmnInit");
-            commands.enterState("CmnStand");
             player = this;
             for(int i = 0; i < Battle_Manager.Instance.players.Count; i++)
                 if (Battle_Manager.Instance.players[i] != this)
                 {
                     opponent = Battle_Manager.Instance.players[i];
+                    worldObjects.Add(3, opponent);
                     break;
                 }
             if (opponent == null)
@@ -200,9 +215,11 @@ public class GameWorldObject : MonoBehaviour
         if (debugNoLoad)
             return;
 
-        inputUpdate();
+        if(isPlayer)
+            inputUpdate();
+
         rotateToCamera();
-        scaleUpdate();
+        hitUpdate();
 
         if (hitstopTick > 0)
         {
@@ -210,8 +227,8 @@ public class GameWorldObject : MonoBehaviour
             return;
         }
 
-        hitUpdate();
         positionUpdate();
+        scaleUpdate();
 
         tick--;
         triggerUpon(3);
@@ -240,57 +257,11 @@ public class GameWorldObject : MonoBehaviour
             lerping = false;
             willRest = false;
             rest = false;
-
-            /*
-            tempSpriteNum++;
-            if (tempSpriteNum > 11)
-                tempSpriteNum = 0;
-            curCollision = tempStateNam + tempSpriteNum;
-            tick = 9;
-            */
-
-            while (!rest)
-            {
-                switchingState = false;
-                if (scriptPos + 1 > states[curState].commands.Count)
-                { commands.enterState(nextState); continue; }
-                commands.objSwitchCase(states[curState].commands[scriptPos]);
-                if (switchingState)
-                    continue;
-                if (!rest || states[curState].commands[scriptPos].id == 3)
-                    scriptPos++;
-                if (scriptPos + 1 > states[curState].commands.Count)
-                    break;
-            }
+            tickUpdate();
 
             triggerUpon(4);
 
-
-            if (curCollision != lastCollision)
-            {
-                if(!playingAnim)
-                    switchSprite();
-
-                if (collisions.ContainsKey(lastCollision))
-                    for (int i = 0; i < collisions[lastCollision].boxCount; i++)
-                        loadedCollisions[0].kill();
-
-                if (collisions.ContainsKey(curCollision))
-                    for (int i = 0; i < collisions[curCollision].boxCount; i++)
-                    {
-                        GameObject col = new GameObject();
-                        col.transform.position = transform.position;
-                        col.transform.rotation = transform.rotation;
-                        if (dir == -1)
-                            col.transform.Rotate(0, 180, 0);
-                        col.transform.localScale = scale;
-                        col.transform.parent = CollisionChild.transform;
-                        Object_Collision temp = col.AddComponent<Object_Collision>();
-                        temp.init(collisions[curCollision].boxes[i], collisions[curCollision].sphere, this, this);
-                        loadedCollisions.Add(temp);
-                    }
-                
-            }
+            colUpdate();
 
             if (lerping && !playingAnim)
                 if (collisions.ContainsKey(lerpCollision))
@@ -320,6 +291,52 @@ public class GameWorldObject : MonoBehaviour
         
     }
 
+    private void tickUpdate()
+    {
+        while (!rest)
+        {
+            switchingState = false;
+            if (scriptPos + 1 > states[curState].commands.Count)
+            { commands.enterState(nextState); continue; }
+            commands.objSwitchCase(states[curState].commands[scriptPos]);
+            if (switchingState)
+                continue;
+            if (!rest || states[curState].commands[scriptPos].id == 3)
+                scriptPos++;
+            if (scriptPos + 1 > states[curState].commands.Count)
+                break;
+        }
+    }
+
+    private void colUpdate()
+    {
+        if (curCollision == lastCollision)
+            return;
+
+        if (!playingAnim)
+            switchSprite();
+
+        if (collisions.ContainsKey(lastCollision))
+            for (int i = 0; i < collisions[lastCollision].boxCount; i++)
+                loadedCollisions[0].kill();
+
+        if (collisions.ContainsKey(curCollision))
+            for (int i = 0; i < collisions[curCollision].boxCount; i++)
+            {
+                GameObject col = new GameObject();
+                col.transform.position = transform.position;
+                col.transform.rotation = transform.rotation;
+                if (dir == ObjectDir.dir_Left)
+                    col.transform.Rotate(0, 180, 0);
+                col.transform.localScale = scale;
+                col.transform.parent = CollisionChild.transform;
+                Object_Collision temp = col.AddComponent<Object_Collision>();
+                temp.init(collisions[curCollision].boxes[i], collisions[curCollision].sphere, this, this);
+                loadedCollisions.Add(temp);
+                Battle_Manager.Instance.collisions.Add(temp);
+            }
+    }
+
     private void switchSprite()
     {
         if (!collisions.ContainsKey(curCollision))
@@ -333,14 +350,14 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].Play(state, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
+                    armatures[armatureList[i]].Play(stateId, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 0f;
                 }
 
             }
         else if(spriteAnimator.HasState(0, stateId))
         {
-            spriteAnimator.Play(state, 0, (float)frame * (1f/12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
+            spriteAnimator.Play(stateId, 0, (float)frame * (1f/12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
             spriteAnimator.speed = 0f;
         }
     }
@@ -356,7 +373,7 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].CrossFade(state, 1, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
+                    armatures[armatureList[i]].CrossFade(stateId, 1, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 1;
                 }
             }
@@ -367,7 +384,7 @@ public class GameWorldObject : MonoBehaviour
         if (faceCamera && useArmature)
         {
             meshParent.LookAt(cameraMain);
-            meshParent.localEulerAngles = new Vector3(0, meshParent.localEulerAngles.y, 0);
+            meshParent.localEulerAngles = new Vector3(0, meshParent.localEulerAngles.y, 0) + rotation;
         }
         else
             meshParent.localEulerAngles = Vector3.zero;
@@ -380,15 +397,20 @@ public class GameWorldObject : MonoBehaviour
         //return;
         transform.parent = world[onStage].transform;
 
-        distance = Mathf.Abs(opponent.locX - locX);
+        distance = getAbsoluteDistance(this, opponent);
 
         if (!momentumPause)
         {
+            /*
             if (hasWallCollision)
-                if (distance + xImpulse > 60000 && Mathf.Abs(locX) + xImpulse > Battle_Manager.Instance.stateWidth)
+            {
+                if (distance + xImpulse > 60000 || Mathf.Abs(locX) + xImpulse > Battle_Manager.Instance.stateWidth)
                     locX += xImpulse * dir;
+            }
             else
                 locX += xImpulse * dir;
+            */
+                locX += xImpulse * (int)dir;
             locY += yImpulse; locZ += zImpulse;
             xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
         }
@@ -412,14 +434,17 @@ public class GameWorldObject : MonoBehaviour
 
         globalVariables[14] = locX;
         globalVariables[15] = locY;
-        globalVariables[16] = locZ;
+        globalVariables[16] = locZ; 
+        globalVariables[22] = xImpulse;
+        globalVariables[23] = yImpulse;
+        globalVariables[24] = zImpulse;
 
-        transform.localPosition = new Vector3((float)locX / 10000, (float)locY / 10000, (float)locZ / 10000);
+        transform.localPosition = new Vector3((float)locX / 100000, (float)locY / 100000, (float)locZ / 100000);
     }
 
     private void scaleUpdate()
     {
-        transform.localScale = new Vector3(scale.x * dir, scale.y, scale.z);
+        transform.localScale = new Vector3(scale.x * (int)dir, scale.y, scale.z);
         CollisionChild.transform.localScale.Set(Mathf.Abs(scale.x), scale.y, scale.z);
     }
 
@@ -503,6 +528,8 @@ public class GameWorldObject : MonoBehaviour
             hitstopTick = attacker.hitstop;
             if (armourTypes[stateType] <= attacker.hitTypes[stateType])
             {
+                commands.enterState(hitstunAnims[attacker.hitAnims[stateType]]);
+                curHealth -= attacker.damage; 
                 xImpulse = attacker.pushBackX;
                 xImpulseAdd = attacker.friction;
                 if (stateType == 2 || attacker.launchOpponent)
@@ -515,7 +542,9 @@ public class GameWorldObject : MonoBehaviour
                     zImpulseAdd = attacker.friction;
                 hitstun = attacker.attackHitstun;
                 globalVariables[18] = hitstun;
-                commands.enterState(hitstunAnims[attacker.hitAnims[stateType]]);
+                rest = false;
+                tickUpdate();
+                colUpdate();
             }
             willBeHit = false;
         }
@@ -526,6 +555,8 @@ public class GameWorldObject : MonoBehaviour
         return p2.locX - p1.locX;
     }
 
+    #region inputs
+    [Serializable]
     public class InputElement
     {
         public byte inputType;
@@ -537,50 +568,63 @@ public class GameWorldObject : MonoBehaviour
         {
             inputType = _inputType;
         }
+
+        public bool same(InputElement other)
+        {
+            return inputType == other.inputType && button == other.button;
+        }
     }
 
     private void inputUpdate()
     {
-        if (ignoreInputs)
-            return;
         inputs_AddToBuffer();
 
         //buffer update
         if (buffer.Count > 0)
         {
             while (buffer.Count > 15)
-            {
                 buffer.RemoveAt(0);
-            }
 
             for (int i = 0; i < buffer.Count; i++)
             {
                 buffer[i].updateCount++;
 
                 if (buffer[i].updateCount == 60)
-                {
                     buffer.RemoveAt(i);
-                }
             }
         }
+
+        if (ignoreInputs)
+            return;
 
         for (int i = 0; i < cancelableStates.Count; i++)
         {
             if (!stateCancels.ContainsKey(cancelableStates[i]))
                 continue;
             StateEntry entry = stateCancels[cancelableStates[i]];
-            if (stateType != entry.type)
-                continue;
             //Debug.Log("Swag");
             //Debug.Log(entry.input + ", " + entry.button);
             if (input_CanInput(entry.input, entry.button, entry.leniantInput,
                 entry.holdBuffer))
             {
+                if (entry.useSubroutine)
+                    if (!stateCheckSubroutine(entry.subroutine, entry.subroutineType))
+                        continue;
                 //Debug.Log("boom");
                 commands.enterState(entry.name);
                 break;
             }
         }
+    }
+
+    private bool stateCheckSubroutine(string subroutine, byte type)
+    {
+        commands.createVar(1, 4, 0);
+        if (type == 0)
+            commands.cmnSubroutine(subroutine);
+        else
+            commands.callSubroutine(subroutine);
+        return Convert.ToBoolean(tempVariables[4]);
     }
 
     private void inputs_AddToBuffer()
@@ -589,26 +633,59 @@ public class GameWorldObject : MonoBehaviour
         if (buffer.Count > 0) _input.inputType = buffer[buffer.Count - 1].inputType;
 
         Vector2 directions = playerControls.Player.Directions.ReadValue<Vector2>();
-
-        if (directions[1] <= -0.5 && directions[0] <= -0.5)
-        { _input.inputType = 1; currInput.inputType = 1; }
-        else if (directions[1] <= -0.5 && directions[0] >= 0.5)
-        { _input.inputType = 3; currInput.inputType = 3; }
-        else if (directions[1] >= 0.5 && directions[0] <= -0.5)
-        { _input.inputType = 7; currInput.inputType = 7; }
-        else if (directions[1] >= 0.5 && directions[0] >= 0.5)
-        { _input.inputType = 9; currInput.inputType = 9; }
-        else if (directions[1] <= -0.5)
-        { _input.inputType = 2; currInput.inputType = 2; }
-        else if (directions[1] >= 0.5)
-        { _input.inputType = 8; currInput.inputType = 8; }
-        else if (directions[0] <= -0.5)
-        { _input.inputType = 4; currInput.inputType = 4; }
-        else if (directions[0] >= 0.5)
-        { _input.inputType = 6; currInput.inputType = 6; }
+        /*
+        if (Mathf.Abs(directions[0]) >= 0.5 && Mathf.Abs(directions[1]) >= 0.5)
+        {
+            if (directions[0] < 0)
+            {
+                if (directions[1] < 0)
+                { _input.inputType = 1; currInput.inputType = 1; }
+                else
+                { _input.inputType = 3; currInput.inputType = 3; }
+            }
+            else
+            {
+                if (directions[1] < 0)
+                { _input.inputType = 7; currInput.inputType = 7; }
+                else
+                { _input.inputType = 9; currInput.inputType = 9; }
+            }
+        }
+        else if(Mathf.Abs(directions[0]) >= 0.5)
+        {
+            if (directions[0] < 0)
+            { _input.inputType = 2; currInput.inputType = 2; }
+            else
+            { _input.inputType = 8; currInput.inputType = 8; }
+        }
+        else if(Mathf.Abs(directions[1]) >= 0.5)
+        {
+            if (directions[1] < 0)
+            { _input.inputType = 4; currInput.inputType = 4; }
+            else
+            { _input.inputType = 6; currInput.inputType = 6; }
+        }
         else
         { _input.inputType = 5; currInput.inputType = 5; }
-
+        */
+        if (directions[1] <= -0.5 && directions[0] <= -0.5)
+             _input.inputType = 1; 
+        else if (directions[1] <= -0.5 && directions[0] >= 0.5)
+            _input.inputType = 3;
+        else if (directions[1] >= 0.5 && directions[0] <= -0.5)
+            _input.inputType = 7;
+        else if (directions[1] >= 0.5 && directions[0] >= 0.5)
+            _input.inputType = 9;
+        else if (directions[1] <= -0.5)
+            _input.inputType = 2;
+        else if (directions[1] >= 0.5)
+            _input.inputType = 8;
+        else if (directions[0] <= -0.5)
+            _input.inputType = 4;
+        else if (directions[0] >= 0.5)
+            _input.inputType = 6;
+        else
+            _input.inputType = 5;
         string _but = "";
 
 
@@ -620,22 +697,20 @@ public class GameWorldObject : MonoBehaviour
 
         if (playerControls.Player.Action_ABCD.IsPressed()) _but = "ABCD";
 
-
-
         _input.button = _but;
-        currInput.button = _but;
 
         if (buffer.Count > 0)
         {
-            if (buffer[buffer.Count - 1].inputType == _input.inputType &&
-                buffer[buffer.Count - 1].button == _input.button)
+            if (buffer[buffer.Count - 1].same(_input))
             {
                 buffer[buffer.Count - 1].updateCount = 0;
                 buffer[buffer.Count - 1].chargeTime++;
+                currInput = buffer[buffer.Count - 1];
                 return;
             }
         }
         buffer.Add(_input);
+        currInput = _input;
     }
 
     private void input_DebugBuffer()
@@ -648,12 +723,12 @@ public class GameWorldObject : MonoBehaviour
             retrn += ": ";
             retrn += buffer[i].button;
             retrn += ", ";
+            retrn += buffer[i].updateCount;
+            retrn += "\n";
         }
 
         Debug.Log(retrn);
     }
-
-    InputSwitchCase inputTypeSwitchCase = new InputSwitchCase();
 
     public bool input_CanInput(short type, string _button, byte lieniant, 
         byte holdBuffer)
@@ -663,7 +738,12 @@ public class GameWorldObject : MonoBehaviour
 
 
         if (!String.IsNullOrEmpty(_button))
-            if (!currInput.button.Contains(_button)) return false;
+        {
+            if (!currInput.button.Contains(_button))
+                return false;
+            else if (currInput.chargeTime > 3)
+                return false;
+        }
 
         if (type == 0)
             type = 5;
@@ -672,9 +752,9 @@ public class GameWorldObject : MonoBehaviour
         if (type < 10)
             _input = new byte[] { (byte)type };
         else 
-            _input = inputTypeSwitchCase.switchCase(type);
+            _input = InputSwitchCase.switchCase(type);
 
-        if(dir <= -1)
+        if(dir == ObjectDir.dir_Left)
             //reverse inputs if turned around
             for(int i = 0; i < _input.Length; i++)
                 switch(_input[i])
@@ -699,11 +779,10 @@ public class GameWorldObject : MonoBehaviour
                         break;
                 }
 
-        if (_input.Length != 0)
+        if (_input.Length == 1)
         {
-            if (_input.Length == 1 && lieniant == 0)
-            {
-                switch(_input[0])
+            if (lieniant == 0)
+                switch (_input[0])
                 {
                     case 5:
                         if (currInput.inputType == 5 || currInput.inputType == 4 || currInput.inputType == 6) return true;
@@ -714,23 +793,24 @@ public class GameWorldObject : MonoBehaviour
                     case 8:
                         if (currInput.inputType == 8 || currInput.inputType == 7 || currInput.inputType == 9) return true;
                         else return false;
+                    default:
+                        if (currInput.inputType == _input[0]) return true;
+                        else return false;
                 }
-            }
-            else if (currInput.inputType != _input[_input.Length - 1]) return false;
+            else if (currInput.inputType == _input[0]) return true;
         }
 
+        if (currInput.inputType != _input[_input.Length - 1]) return false;
+
         int startBuf = 0;
-        for (int i = 0; i < buffer.Count; i++)
-        {
+        for (int i = buffer.Count - 1 - _input.Length; i > 0; i--)
             if (buffer[i].inputType == _input[0])
             {
                 startBuf = i;
                 break;
             }
-        }
 
-        if (buffer.Count >= _input.Length)
-        {
+        if (buffer.Count >= _input.Length && buffer.Count >= startBuf + _input.Length + 1)
             switch(_input.Length)
             {
                 case 0:
@@ -738,7 +818,7 @@ public class GameWorldObject : MonoBehaviour
                     return true;
                 case 2:
                     if (buffer[startBuf].inputType == _input[0] && buffer[startBuf + 1].inputType == 5 &&
-                        buffer[startBuf + 2].inputType == _input[1]) return true;
+                        buffer[startBuf + 2].inputType == _input[1] && buffer[startBuf].updateCount <= 7) return true;
                     break;
                 default:
                     bool multiTap = false;
@@ -772,9 +852,9 @@ public class GameWorldObject : MonoBehaviour
                     if (taps >= _input.Length) return true;
                     break;
             }
-        }
         return false;
     }
+    #endregion
 
     private void addGlobalVariables()
     {
@@ -798,5 +878,29 @@ public class GameWorldObject : MonoBehaviour
         commands.createVar(0, 18, hitstun);
         commands.createVar(0, 19, (int)untechTime[0]);
         commands.createVar(0, 20, (int)untechTime[1]);
+        commands.createVar(0, 21, HKDtimer);
+        commands.createVar(0, 22, xImpulse);
+        commands.createVar(0, 23, yImpulse);
+        commands.createVar(0, 24, zImpulse);
     }
+
+    private void kill()
+    {
+        foreach (Object_Collision col in loadedCollisions)
+            col.kill();
+        Destroy(gameObject);
+        Destroy(meshParent);
+        Destroy(CollisionChild);
+        Destroy(audioManager.voiceParent.gameObject);
+        Destroy(audioManager.soundsParent.gameObject);
+        Destroy(spriteAnimator.gameObject);
+        Destroy(effectManager.effectSpawner);
+    }
+}
+
+[Serializable]
+public enum ObjectDir
+{
+    dir_Right = 1,
+    dir_Left = -1,
 }

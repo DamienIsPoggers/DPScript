@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -158,6 +159,14 @@ namespace DPScript
         div = 8,
         remainder = 9,
         gets = 10,
+    }
+
+    [Serializable]
+    public enum DPS_VoiceLanguages
+    {
+        English = 0,
+        Japapanese = 1,
+        Korean = 2,
     }
 
     #endregion

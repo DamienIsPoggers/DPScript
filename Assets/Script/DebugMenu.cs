@@ -12,13 +12,13 @@ public class DebugMenu : MonoBehaviour
     bool show = false;
 
     List<byte[]> soundToPlay = new List<byte[]>(), stateToEnter = new List<byte[]>(), effectToCall = new List<byte[]>();
-    bool commonPlayerEffect = false;
+    bool commonPlayerEffect = false, inputCheckBool = false;
     List<Vector3> effectSpawnOffsets = new List<Vector3>();
     List<int> effectSpawnDeathTime = new List<int>();
     byte[] songToPlay = new byte[50];
 
     byte[] objectToSpawn = new byte[255];
-    int objectSpawnColor = 0;
+    int objectSpawnColor = 0, inputTypeCheck = 0;
     Objects_Load loading = new Objects_Load();
 
     void Start()
@@ -112,13 +112,13 @@ public class DebugMenu : MonoBehaviour
                 {
                     if (ImGui.TreeNode("Transform"))
                     {
-                        ImGui.DragInt3("Position", ref Battle_Manager.Instance.players[i].locX, 100f);
+                        ImGui.DragInt3("Position", ref Battle_Manager.Instance.players[i].locX, 1000f);
                         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                             ImGui.SetTooltip("The objects position.");
-                        ImGui.DragInt3("Impulse", ref Battle_Manager.Instance.players[i].xImpulse, 100f);
+                        ImGui.DragInt3("Impulse", ref Battle_Manager.Instance.players[i].xImpulse, 1000f);
                         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                             ImGui.SetTooltip("The objects impulse. Updates the position every frame.");
-                        ImGui.DragInt3("Impulse Modifier", ref Battle_Manager.Instance.players[i].xImpulseAdd, 10f);
+                        ImGui.DragInt3("Impulse Modifier", ref Battle_Manager.Instance.players[i].xImpulseAdd, 100f);
                         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                             ImGui.SetTooltip("The objects impulse modifier. Updates the impulse every frame.");
                         ImGui.DragFloat3("Rotation", ref Battle_Manager.Instance.players[i].rotation);
@@ -129,10 +129,10 @@ public class DebugMenu : MonoBehaviour
                             ImGui.SetTooltip("The objects scale.");
 
                         if (ImGui.ArrowButton("l", ImGuiDir.Left))
-                            Battle_Manager.Instance.players[i].dir = -1;
+                            Battle_Manager.Instance.players[i].dir = ObjectDir.dir_Left;
                         ImGui.SameLine();
                         if (ImGui.ArrowButton("r", ImGuiDir.Right))
-                            Battle_Manager.Instance.players[i].dir = 1;
+                            Battle_Manager.Instance.players[i].dir = ObjectDir.dir_Right;
                         ImGui.SameLine();
                         ImGui.Text("Set Direction");
 
@@ -151,7 +151,9 @@ public class DebugMenu : MonoBehaviour
                         if (ImGui.Button("Enter"))
                             Battle_Manager.Instance.players[i].GetComponent<DPS_ObjectCommand>()
                                 .enterState(Encoding.ASCII.GetString(stateToEnter[i]).Replace("\0", string.Empty));
-
+                        if (ImGui.Button("Exit State"))
+                            Battle_Manager.Instance.players[i].GetComponent<DPS_ObjectCommand>()
+                                .exitState();
                         ImGui.Separator();
                         ImGui.Checkbox("Load common player effect", ref commonPlayerEffect);
                         ImGui.InputText("Effect to play", effectToCall[i], 32);
@@ -171,7 +173,13 @@ public class DebugMenu : MonoBehaviour
                                 Battle_Manager.Instance.players[i].GetComponent<DPS_EffectManager>()
                                     .spawnEffect(Encoding.ASCII.GetString(effectToCall[i]).Replace("\0",
                                     string.Empty), effectSpawnOffsets[i], (uint)effectSpawnDeathTime[i]);
-                        }    
+                        }
+
+                        ImGui.Separator();
+                        ImGui.InputInt("Check Input", ref inputTypeCheck);
+                        if (ImGui.Button("Check"))
+                            inputCheckBool = Battle_Manager.Instance.players[i].input_CanInput((short)inputTypeCheck, "", 1, 0);
+                        ImGui.Text(inputCheckBool.ToString());
 
                         ImGui.TreePop();
                     }

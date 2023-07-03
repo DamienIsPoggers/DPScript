@@ -2,17 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DPS_CharSelectLoad : MonoBehaviour
+namespace DPScript.Loading
 {
-    // Start is called before the first frame update
-    void Start()
+    [CreateAssetMenu(menuName = "DPScript/Battle Object/Character Select Load")]
+    public class DPS_CharSelectLoad : ScriptableObject
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        public GameObject prefab;
+        public DPS_MatLoad mats;
+        public bool faceCamera = false;
+        public List<AudioClip> idleLines = new List<AudioClip>(), selectedLines = new List<AudioClip>();
+        public AudioClip announcerLine;
     }
 }

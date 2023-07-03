@@ -99,7 +99,9 @@ public class CameraManager : MonoBehaviour
                 camZoomReturnTimer = 0;
             }
             transform.localPosition = new Vector3(posX, posY, posZ);
+            transform.localEulerAngles = Vector3.zero;
             updateDefaultPos();
+
         }
     }
 

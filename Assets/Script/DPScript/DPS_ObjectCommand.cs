@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Linq;
+using UnityEditor;
 
 namespace DPScript
 {
@@ -62,7 +63,7 @@ namespace DPScript
                     enterState(com.stringArgs[0]);
                     break;
                 case 7:
-                    createObject(com.stringArgs[0], com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
+                    createObject(com.stringArgs[0], com.intArgs[0], com.intArgs[1]);
                     break;
                 case 8:
                     callSubroutine(com.stringArgs[0]);
@@ -110,7 +111,7 @@ namespace DPScript
                     o.returnInt = Convert.ToInt32(compareNum(com));
                     break;
                 case 24:
-                    o.returnInt = Convert.ToInt32(o.input_CanInput(com.byteArgs[0], "", 0, 0));
+                    o.returnInt = Convert.ToInt32(o.input_CanInput(com.byteArgs[0], "", 1, 0));
                     break;
                 case 30:
                     upon(com.byteArgs[0]);
@@ -160,6 +161,12 @@ namespace DPScript
                 case 48:
                     addPosZ(com.byteArgs[0], com.intArgs[0]);
                     break;
+                case 49:
+                    o.returnInt = getDistance(o.worldObjects[com.intArgs[0]]);
+                    break;
+                case 60:
+                    o.returnInt = doMath(com);
+                    break;
                 case 100:
                     stateRegister(com.stringArgs[0]);
                     break;
@@ -201,6 +208,15 @@ namespace DPScript
                 case 114:
                     addSuperCancels();
                     break;
+                case 115:
+                    hitCancel(com.stringArgs[0]);
+                    break;
+                case 116:
+                    blockCancel(com.stringArgs[0]);
+                    break;
+                case 117:
+                    hitOrBlockCancel(com.stringArgs[0]);
+                    break;
                 case 119:
                     removeCancel(com.stringArgs[0]);
                     break;
@@ -229,9 +245,15 @@ namespace DPScript
                     Transform focus = null;
                     if (com.byteArgs[0] == 0)
                         focus = o.transform;
-                    CameraManager.Instance.playCameraAnimation(o.cameraAnimator, o.dir, com.stringArgs[0],
+                    CameraManager.Instance.playCameraAnimation(o.cameraAnimator, (float)o.dir, com.stringArgs[0],
                         focus, com.uintArgs[0], com.uintArgs[1], new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
                         new Vector3(com.floatArgs[3], com.floatArgs[4], com.floatArgs[5]));
+                    break;
+                case 129:
+                    showMesh(com.stringArgs[0], com.boolArgs[0]);
+                    break;
+                case 130:
+                    setAnimSpeed(com.floatArgs[0]);
                     break;
                 case 150:
                     attackDamage(com);
@@ -285,6 +307,9 @@ namespace DPScript
                 case 166:
                     attackUnblockableType(com.byteArgs[0], com.byteArgs[1], com.byteArgs[2],
                         com.byteArgs[3], com.byteArgs[4], com.byteArgs[5]);
+                    break;
+                case 169:
+                    attackRefreshHit();
                     break;
             }
         }
@@ -407,9 +432,49 @@ namespace DPScript
                 cmnSubroutine(state);
         }
 
-        void createObject(string state, byte type, int offsetX, int offsetY)
+        void createObject(string state, int offsetX, int offsetY)
         {
+            GameObject sub = new GameObject(state +  "__" + o.idStr);
+            GameWorldObject obj = sub.AddComponent<GameWorldObject>();
+            DPS_AudioManager aud = sub.AddComponent<DPS_AudioManager>();
+            aud = a;
+            DPS_EffectManager eff = sub.AddComponent<DPS_EffectManager>();
+            eff = e;
+            sub.AddComponent<Rigidbody>();
+            obj.locX = o.locX + offsetX;
+            obj.locY = o.locY + offsetY;
+            obj.locZ = o.locZ;
+            obj.rotation = o.rotation;
+            obj.scale = o.rotation;
+            obj.states = o.states;
+            obj.subroutines = o.subroutines;
+            obj.commonSubroutines = o.commonSubroutines;
+            obj.collisions = o.collisions;
+            obj.dir = o.dir;
+            obj.opponent = o.opponent;
+            obj.player = p;
+            obj.worldObjects.Add(2, o);
+            obj.tempVariables = o.tempVariables;
+            obj.globalVariables = o.globalVariables;
+            obj.isPlayer = false;
+            obj.objectStartState = state;
 
+            GameObject mesh = new GameObject("Mesh");
+            mesh.transform.parent = sub.transform;
+            GameObject col = new GameObject("Collision");
+            col.transform.parent = sub.transform;
+            GameObject voices = new GameObject("Voices");
+            voices.transform.parent = sub.transform;
+            voices.AddComponent<AudioSource>();
+            GameObject sounds = new GameObject("Sounds");
+            sounds.transform.parent = sub.transform;
+            GameObject spr = new GameObject("Sprites");
+            SpriteRenderer sprRenderer = spr.AddComponent<SpriteRenderer>();
+            sprRenderer = o.spriteAnimator.GetComponent<SpriteRenderer>();
+            Animator sprAnim = spr.AddComponent<Animator>();
+            sprAnim = o.spriteAnimator;
+            GameObject eff2 = new GameObject("Effects");
+            eff2.transform.parent = sub.transform;
         }
 
         public void callSubroutine(string sub)
@@ -443,10 +508,7 @@ namespace DPScript
         public void editVar(byte table, int id, int data)
         {
             if (table == 0)
-                if (id <= 21)
-                    return;
-                else
-                    o.globalVariables[id] = data;
+                o.globalVariables[id] = data;
             else
                 o.tempVariables[id] = data;
         }
@@ -670,6 +732,78 @@ namespace DPScript
             }
         }
 
+        public int getDistance(GameWorldObject other)
+        {
+            return other.locX - o.locX;
+        }
+
+        public int doMath(scriptCommand com)
+        {
+            byte comNum = 0;
+            byte intNum = 0;
+            int num1 = 0;
+            switch (com.byteArgs[0])
+            {
+                case 0:
+                    num1 = o.globalVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 1:
+                    num1 = o.tempVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[comNum]);
+                    comNum++;
+                    num1 = o.returnInt;
+                    break;
+                case 3:
+                    num1 = o.opponent.globalVariables[com.intArgs[0]];
+                    intNum++;
+                    break;
+                case 4:
+                    num1 = com.intArgs[0];
+                    intNum++;
+                    break;
+            }
+
+            int num2 = 0;
+            switch (com.byteArgs[1])
+            {
+                case 0:
+                    num2 = o.globalVariables[com.intArgs[intNum]];
+                    break;
+                case 1:
+                    num2 = o.tempVariables[com.intArgs[intNum]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[comNum]);
+                    num2 = o.returnInt;
+                    break;
+                case 3:
+                    num2 = o.opponent.globalVariables[com.intArgs[intNum]];
+                    break;
+                case 4:
+                    num2 = com.intArgs[intNum];
+                    break;
+            }
+
+            switch (com.math)
+            {
+                default:
+                case DPS_MathTypes.add:
+                    return num1 + num2;
+                case DPS_MathTypes.sub:
+                    return num1 - num2;
+                case DPS_MathTypes.mul:
+                    return num1 * num2;
+                case DPS_MathTypes.div:
+                    return num1 / num2;
+                case DPS_MathTypes.remainder:
+                    return num1 % num2;
+            }
+        }
+
         public void addCancel(string state)
         {
             //Debug.Log("add cancel");
@@ -682,7 +816,8 @@ namespace DPScript
             for(int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 3 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1
+                    && o.stateType == o.stateCancels[o.stateCancelIDs[i]].type)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
             }
         }
@@ -692,7 +827,8 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 0 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1
+                    && o.stateType == o.stateCancels[o.stateCancelIDs[i]].type)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
             }
         }
@@ -702,7 +838,8 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 1 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1
+                    && o.stateType == o.stateCancels[o.stateCancelIDs[i]].type)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
             }
         }
@@ -712,9 +849,25 @@ namespace DPScript
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
                 if (o.stateCancels[o.stateCancelIDs[i]].attackType == 2 && o.curState != o.stateCancelIDs[i]
-                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1)
+                    && !o.cancelableStates.Contains(o.stateCancelIDs[i]) && o.stateCancels[o.stateCancelIDs[i]].useableIn != 1
+                    && o.stateType == o.stateCancels[o.stateCancelIDs[i]].type)
                     o.cancelableStates.Add(o.stateCancelIDs[i]);
             }
+        }
+
+        public void hitCancel(string state)
+        {
+            o.hitCancels.Add(state);
+        }
+
+        public void blockCancel(string state)
+        {
+            o.blockCancels.Add(state);
+        }
+
+        public void hitOrBlockCancel(string state)
+        {
+            o.hitOrBlockCancels.Add(state);
         }
 
         public void removeCancel(string state)
@@ -750,8 +903,6 @@ namespace DPScript
 
         public void exitState()
         {
-            if (o.curState == "CmnHitstunStd")
-                Debug.Log("Leaving hit");
             enterState(o.nextState);
         }
 
@@ -771,6 +922,26 @@ namespace DPScript
                 o.spriteAnimator.Play(state, 0);
                 o.spriteAnimator.speed = speed;
             }
+        }
+
+        public void showMesh(string mesh, bool b)
+        {
+            o.renderers[mesh].enabled = b;
+            o.armatures[mesh].enabled = b;
+            o.armatures[mesh].StopPlayback();
+        }
+
+        public void setAnimSpeed(float speed)
+        {
+            if(o.useArmature)
+                for (int i = 0; i < o.armatureList.Count; i++)
+                {
+                    if (!o.renderers[o.armatureList[i]].enabled)
+                        continue;
+                    o.armatures[o.armatureList[i]].speed = speed;
+                }
+            else
+                o.spriteAnimator.speed = speed;
         }
 
         #endregion
@@ -1258,6 +1429,11 @@ namespace DPScript
             o.hitTypes[3] = grab;
             o.hitTypes[4] = projectile;
             o.hitTypes[5] = arg6;
+        }
+
+        public void attackRefreshHit()
+        {
+            o.hitboxesDisabled = false;
         }
 
         #endregion

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 548b7d429bc4a4d4fb09cde595f51ef9, type: 3}
+  m_Name: sol_load_csel
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 6968396224329444464, guid: 1fee33623a03d674295561539a17ad3f, type: 3}
+  mats: {fileID: 11400000, guid: 4c972be0f7b42294683b108961653e01, type: 2}
+  faceCamera: 1
+  idleLines: []
+  selectedLines: []
+  announcerLine: {fileID: 0}

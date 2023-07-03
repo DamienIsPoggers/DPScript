@@ -16,6 +16,7 @@ public class Battle_Manager : MonoBehaviour
 
     public List<GameWorldObject> players = new List<GameWorldObject>();
     public DPS_CommonPlayer commonPlayer;
+    public List<Object_Collision> collisions = new List<Object_Collision>();
 
     // Start is called before the first frame update
     void Awake()

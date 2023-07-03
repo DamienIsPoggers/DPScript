@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DPScript.Loading
 {
-    [CreateAssetMenu(menuName = "DPScript Load/Battle Object/Material Group")]
+    [CreateAssetMenu(menuName = "DPScript/Battle Object/Material Group")]
     public class DPS_MatGroup : ScriptableObject
     {
         public List<DPS_ObjectMat> materials;

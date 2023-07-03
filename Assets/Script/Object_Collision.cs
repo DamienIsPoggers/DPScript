@@ -1,23 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
-using System;
-using UnityEngine.UIElements;
 
 public class Object_Collision : MonoBehaviour
 {
     public collisionBox box;
     public GameWorldObject player;
     public GameWorldObject parent;
-    
-    public bool isStatic = false;
+
+    public bool sphere = false;
 
     public void init(collisionBox box, bool sphere, GameWorldObject player, GameWorldObject parent)
     {
         this.box = box;
         this.player = player;
         this.parent = parent;
+        this.sphere = sphere;
 
         if (sphere)
         {
@@ -39,7 +36,7 @@ public class Object_Collision : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("i wanna kill myself");
+        //Debug.Log("i wanna kill myself");
         Object_Collision tempBox = other.GetComponent<Object_Collision>();
         if (tempBox == null || !isActive())
             return;
@@ -89,6 +86,7 @@ public class Object_Collision : MonoBehaviour
     public void kill()
     {
         parent.loadedCollisions.Remove(this);
+        Battle_Manager.Instance.collisions.Remove(this);
         Destroy(gameObject);
     }
 }

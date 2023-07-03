@@ -9,15 +9,14 @@ using System.Runtime.CompilerServices;
 
 namespace DPScript
 {
-    class DPS_FileReader
+    public  static class DPS_FileReader
     {
-        public scriptFile loadScript(TextAsset path)
+        public static scriptFile loadScript(TextAsset path)
         {
-            DPS_CommandDB db_Reader = new DPS_CommandDB();
             scriptFile script = new scriptFile();
             BinaryReader file = new BinaryReader(new MemoryStream(path.bytes));
-            string indent = Encoding.ASCII.GetString(file.ReadBytes(5));
-            Debug.Assert(indent == "DPS |" && file.ReadByte() == 0x00);
+            string indent = Encoding.ASCII.GetString(file.ReadBytes(6));
+            Debug.Assert(indent == "DPS |\0"); //Debug.Log(indent);
 
             uint entryCount = file.ReadUInt32();
             script.version = file.ReadUInt16();
@@ -43,7 +42,7 @@ namespace DPScript
                     scriptCommand com = new scriptCommand();
                     com.id = file.ReadInt32();
                     //Debug.Log(com.id);
-                    DPS_CommandDB.Command temp = db_Reader.getCommand(com.id);
+                    DPS_CommandDB.Command temp = DPS_CommandDB.getCommand(com.id);
                     //Console.WriteLine(temp.name);
                     string[] args = temp.args;
                     for (int i2 = 0; i2 < args.Length; i2++)
@@ -51,18 +50,19 @@ namespace DPScript
                         uint typeCount;
                         UInt32.TryParse(args[i2][0].ToString(), out typeCount);
                         for (int i3 = 0; i3 < typeCount; i3++)
-                            position = scriptSwitchCase(com, i2, temp, position, file, db_Reader);
+                            position = scriptSwitchCase(com, i2, temp, position, file);
                     }
                     entry.commands.Add(com);
                 }
                 script.entries.Add(entry.name, entry);
                 script.entryNames.Add(entry.name);
             }
+            file.Close();
             return script;
         }
 
-        private uint scriptSwitchCase(scriptCommand com, int i2, DPS_CommandDB.Command temp, uint position, 
-            BinaryReader file, DPS_CommandDB db_Reader)
+        private static uint scriptSwitchCase(scriptCommand com, int i2, DPS_CommandDB.Command temp, uint position, 
+            BinaryReader file)
         {
             //Debug.Log(com.id);
             switch (temp.args[i2][1])
@@ -99,7 +99,7 @@ namespace DPScript
                         scriptCommand com2 = new scriptCommand();
                         com2.id = file.ReadInt32();
                         //Debug.Log(com2.id);
-                        DPS_CommandDB.Command temp2 = db_Reader.getCommand(com2.id);
+                        DPS_CommandDB.Command temp2 = DPS_CommandDB.getCommand(com2.id);
                         //Debug.Log(temp2.name);
                         string[] args = temp2.args;
                         for (int j2 = 0; j2 < args.Length; j2++)
@@ -107,7 +107,7 @@ namespace DPScript
                             uint typeCount;
                             UInt32.TryParse(args[j2][0].ToString(), out typeCount);
                             for (int j3 = 0; j3 < typeCount; j3++)
-                                position = scriptSwitchCase(com2, j2, temp2, position, file, db_Reader);
+                                position = scriptSwitchCase(com2, j2, temp2, position, file);
                         }
                         com.commands.Add(com2);
                     }
@@ -127,11 +127,19 @@ namespace DPScript
             return position;
         }
 
+        public static collisionFile loadCollision(string path)
+        {
+            return loadCollision(new BinaryReader(File.Open(path, FileMode.Open)));
+        }
 
-        public collisionFile loadCollision(TextAsset path)
+        public static collisionFile loadCollision(TextAsset path)
+        {
+            return loadCollision(new BinaryReader(new MemoryStream(path.bytes)));
+        }
+
+        public static collisionFile loadCollision(BinaryReader file)
         {
             collisionFile collision = new collisionFile();
-            BinaryReader file = new BinaryReader(new MemoryStream(path.bytes));
             string indent = Encoding.ASCII.GetString(file.ReadBytes(5));
             Debug.Assert(indent == "DPS |" && file.ReadByte() == 0x01);
 
@@ -198,11 +206,11 @@ namespace DPScript
                 collision.entries.Add(entry.name, entry);
                 collision.entryNames.Add(entry.name);
             }
-
+            file.Close();
             return collision;
         }
 
-        public dataArray_File loadDataArray(TextAsset path)
+        public static dataArray_File loadDataArray(TextAsset path)
         {
             dataArray_File data = new dataArray_File();
             //Debug.Log("loading data array");
@@ -256,7 +264,7 @@ namespace DPScript
                 }
                 data.entries.Add(entry.name, entry);
             }
-
+            file.Close();
             return data;
         }
     }

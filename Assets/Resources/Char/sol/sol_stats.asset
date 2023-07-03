@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 004a6661a3e1b6d4997a55ebc87e0c45, type: 3}
+  m_Name: sol_stats
+  m_EditorClassIdentifier: 
+  characterId: sol
+  health: 541
+  faceCamera: 1
+  usesMeshes: 0
+  forwardWalkingSpeed: 4000
+  backwardsWalkingSpeed: -3000
+  initalDashingSpeed: 6000
+  dashingAccelerationRate: 400
+  dashingMaxSpeed: 8200
+  jumpingHeight: 15000
+  forwardJumpSpeed: 5000
+  backwardsJumpSpeed: -5000
+  airJumpCount: 1
+  forwardAirDashCount: 1
+  backwardsAirDashCount: 1

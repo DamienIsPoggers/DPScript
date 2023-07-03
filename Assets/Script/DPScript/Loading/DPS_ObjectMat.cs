@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace DPScript.Loading
 {
-    [CreateAssetMenu(menuName = "DPScript Load/Battle Object/Object Material Definition")]
+    [CreateAssetMenu(menuName = "DPScript/Battle Object/Object Material Definition")]
     public class DPS_ObjectMat : ScriptableObject
     {
-        public string name;
+        public new string name;
         public List<Material> materials;
     }
 }

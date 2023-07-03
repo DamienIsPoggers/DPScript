@@ -57,17 +57,17 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
---- !u!95 &3138858065692882889
+--- !u!95 &8407046448589479519
 Animator:
   serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5331026002996133897}
+  m_GameObject: {fileID: 4757950912191191863}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: a5393d2733e9ac948b94d11b502475af, type: 2}
+  m_Controller: {fileID: 9100000, guid: 1f317d4bd8086ff4caa837210222d3a7, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -95,17 +95,17 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
---- !u!95 &8407046448589479519
+--- !u!95 &3138858065692882889
 Animator:
   serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4757950912191191863}
+  m_GameObject: {fileID: 5331026002996133897}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 1f317d4bd8086ff4caa837210222d3a7, type: 2}
+  m_Controller: {fileID: 9100000, guid: a5393d2733e9ac948b94d11b502475af, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -830,8 +830,16 @@ PrefabInstance:
       value: CmnStand
       objectReference: {fileID: 0}
     - target: {fileID: 5589524399480029406, guid: 3058ee49c01f00d43a2dceea0c01163d, type: 3}
+      propertyPath: curHealth
+      value: 541
+      objectReference: {fileID: 0}
+    - target: {fileID: 5589524399480029406, guid: 3058ee49c01f00d43a2dceea0c01163d, type: 3}
       propertyPath: isInDebug
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5589524399480029406, guid: 3058ee49c01f00d43a2dceea0c01163d, type: 3}
+      propertyPath: maxHealth
+      value: 541
       objectReference: {fileID: 0}
     - target: {fileID: 5589524399480029406, guid: 3058ee49c01f00d43a2dceea0c01163d, type: 3}
       propertyPath: useArmature

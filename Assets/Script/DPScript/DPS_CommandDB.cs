@@ -15,12 +15,10 @@ namespace DPScript
             public int id;
             public string[] args;
         }
-
-        DPS_FileReader fileReader = new DPS_FileReader();
         dataArray_Entry db;
         List<Command> commands = new List<Command>();
 
-        public Command getCommand(int id)
+        public static Command getCommand(int id)
         {
             Command temp = new Command();
 
@@ -44,7 +42,7 @@ namespace DPScript
                     temp.args = new string[] { "1s" };
                     break;
                 case 7:
-                    temp.args = new string[] { "1s", "1h", "2i" };
+                    temp.args = new string[] { "1s", "2i" };
                     break;
                 case 8:
                     temp.args = new string[] { "1s" };
@@ -109,6 +107,12 @@ namespace DPScript
                 case 48:
                     temp.args = new string[] { "1h", "1c" };
                     break;
+                case 49:
+                    temp.args = new string[] { "1i" };
+                    break;
+                case 60:
+                    temp.args = new string[] { "1h", "1c", "1m", "1h", "1c" };
+                    break;
                 case 100:
                     temp.args = new string[] { "1s" };
                     break;
@@ -146,6 +150,10 @@ namespace DPScript
                 case 114:
                     temp.args = new string[] { "1n" };
                     break;
+                case 115:
+                case 116:
+                case 117:
+                case 118:
                 case 119:
                     temp.args = new string[] { "1s" };
                     break;
@@ -171,6 +179,12 @@ namespace DPScript
                     break;
                 case 128:
                     temp.args = new string[] { "1u", "1s", "3i" };
+                    break;
+                case 129:
+                    temp.args = new string[] { "1s", "1b" };
+                    break;
+                case 130:
+                    temp.args = new string[] { "1f" };
                     break;
                 case 150:
                 case 151:
@@ -212,6 +226,15 @@ namespace DPScript
                     break;
                 case 166:
                     temp.args = new string[] { "6h" };
+                    break;
+                case 167:
+                    temp.args = new string[] { "1h", "1s", "1h", "2u", "6f" };
+                    break;
+                case 168:
+                    temp.args = new string[] { "1i" };
+                    break;
+                case 169:
+                    temp.args = new string[] { "1n" };
                     break;
             }
 

@@ -25,29 +25,15 @@ public class HitboxOverlay : MonoBehaviour
         if (!Battle_Manager.Instance.showHitboxes)
             return;
 
-        ImGui.GetWindowDrawList().AddQuadFilled(Vector2.right, Vector2.up, Vector2.left, Vector2.down, 0xFFFF0000);
+        //ImGui.GetForegroundDrawList().AddQuadFilled(new Vector2(300, 300), new Vector2(400, 300), new Vector2(400, 400), new Vector2(300, 400), 0xFFFF0000);
 
-        /*
+        
         foreach (Object_Collision box in Battle_Manager.Instance.collisions)
         {
-            Vector2 pointA = new Vector2(((box.baseBox.x / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir, 
-                ((box.baseBox.y / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
-            Vector2 pointB = new Vector2((((box.baseBox.x + box.baseBox.width) / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
-                ((box.baseBox.y / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
-            Vector2 pointC = new Vector2((((box.baseBox.x + box.baseBox.width) / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
-                (((box.baseBox.y = box.baseBox.height) / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
-            Vector2 pointD = new Vector2(((box.baseBox.x / 100) + box.parent.transform.position.x) * box.parent.transform.localScale.x * box.parent.dir,
-                (((box.baseBox.y + box.baseBox.height) / 100) + box.parent.transform.position.y) * box.parent.transform.localScale.y);
-
-            pointA = Camera.main.WorldToScreenPoint(pointA);
-            pointB = Camera.main.WorldToScreenPoint(pointB);
-            pointC = Camera.main.WorldToScreenPoint(pointC);
-            pointD = Camera.main.WorldToScreenPoint(pointD);
-
-            Debug.Log(pointA.ToString());
+            
 
             uint outlineColor, boxColor;
-            switch(box.type)
+            switch(box.box.type)
             {
                 default:
                     outlineColor = 0xFFFFFFFF;
@@ -66,11 +52,6 @@ public class HitboxOverlay : MonoBehaviour
                     boxColor = 0x78FF0000;
                     return;
             }
-
-            ImGui.GetWindowDrawList().AddQuad(pointA, pointB, pointC, pointD, outlineColor, 1);
-            ImGui.GetWindowDrawList().AddQuadFilled(pointA, pointB, pointC, pointD, boxColor);
         }
-        */
-        
     }
 }
