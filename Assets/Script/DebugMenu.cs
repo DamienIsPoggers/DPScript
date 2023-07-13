@@ -200,6 +200,7 @@ public class DebugMenu : MonoBehaviour
 
                     ImGui.TreePop();
                 }
+            ImGui.Text((int)(Time.deltaTime * 1000) + "ms");
         }
     }
 }

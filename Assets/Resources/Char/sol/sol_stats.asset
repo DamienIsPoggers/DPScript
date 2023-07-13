@@ -15,7 +15,9 @@ MonoBehaviour:
   characterId: sol
   health: 541
   faceCamera: 1
-  usesMeshes: 0
+  usesMeshes: 1
+  weightMultiplier: 1
+  startState: CmnStand
   forwardWalkingSpeed: 4000
   backwardsWalkingSpeed: -3000
   initalDashingSpeed: 6000
@@ -24,6 +26,7 @@ MonoBehaviour:
   jumpingHeight: 15000
   forwardJumpSpeed: 5000
   backwardsJumpSpeed: -5000
+  defualtGravity: -900
   airJumpCount: 1
   forwardAirDashCount: 1
   backwardsAirDashCount: 1

@@ -96,9 +96,11 @@ public class GameWorldObject : MonoBehaviour
     //some various variables for misc stuff
     public int[] walkingSpeed = new int[] { 4000, -3000 }; //fwalk, bwalk
     public int[] dashSpeed = new int[] { 6000, 400, 8200 }; //inital speed, accel, max
+    public int[] defualtAirActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
     public int[] airActionsCount = new int[] { 1, 1, 1 }; //air jump, fdash, bdash
     public int[] jumpSpeed = new int[] { 5000, -5000, 15000 }; //fspeed, bspeed, height
     public int defaultGravity = -900;
+    public float weightMultiplier = 1;
 
     public int hitstun = 0;
 
@@ -129,6 +131,8 @@ public class GameWorldObject : MonoBehaviour
 
     public bool initalized = false;
     public bool ignoreInputs = false;
+
+    private float timeUpdate = 0;
 
     private void Awake()
     {
@@ -162,7 +166,7 @@ public class GameWorldObject : MonoBehaviour
 
     private void Start()
     { 
-        Application.targetFrameRate = 60;
+        //Application.targetFrameRate = 60;
 
         if (!isPlayer)
             return;
@@ -182,21 +186,19 @@ public class GameWorldObject : MonoBehaviour
         playerControls.Disable();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         //if (!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
         //  return;
         //input_DebugBuffer();
         if(!initalized)
         {
-            commands.enterState(objectStartState);
             if(!isPlayer)
             {
+                commands.enterState(objectStartState);
                 initalized = true;
                 return;
             }
-            commands.callSubroutine("init");
-            commands.cmnSubroutine("cmnInit");
             player = this;
             for(int i = 0; i < Battle_Manager.Instance.players.Count; i++)
                 if (Battle_Manager.Instance.players[i] != this)
@@ -208,6 +210,9 @@ public class GameWorldObject : MonoBehaviour
             if (opponent == null)
                 return;
             addGlobalVariables();
+            commands.callSubroutine("init");
+            commands.cmnSubroutine("cmnInit");
+            commands.enterState(objectStartState);
             initalized = true;
             return;
         }
@@ -215,7 +220,9 @@ public class GameWorldObject : MonoBehaviour
         if (debugNoLoad)
             return;
 
-        if(isPlayer)
+        
+
+        if (isPlayer)
             inputUpdate();
 
         rotateToCamera();
@@ -278,17 +285,10 @@ public class GameWorldObject : MonoBehaviour
                             playingAnim = false;
                         break;
                     }
-            else
+                    else
                 if (spriteAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime <= 1)
                         playingAnim = false;
         }
-
-        if (!isPlayer)
-            return;
-        if (!isActive)
-            return;
-
-        
     }
 
     private void tickUpdate()
@@ -561,8 +561,9 @@ public class GameWorldObject : MonoBehaviour
     {
         public byte inputType;
         public string button;
-        public uint updateCount = 0;
-        public uint chargeTime = 0;
+        public float updateCount = 0;
+        public float chargeTime = 0;
+        public bool used = false;
 
         public InputElement(byte _inputType)
         {
@@ -587,9 +588,9 @@ public class GameWorldObject : MonoBehaviour
 
             for (int i = 0; i < buffer.Count; i++)
             {
-                buffer[i].updateCount++;
+                buffer[i].updateCount += Time.deltaTime;
 
-                if (buffer[i].updateCount == 60)
+                if (buffer[i].updateCount >= 1f)
                     buffer.RemoveAt(i);
             }
         }
@@ -704,7 +705,7 @@ public class GameWorldObject : MonoBehaviour
             if (buffer[buffer.Count - 1].same(_input))
             {
                 buffer[buffer.Count - 1].updateCount = 0;
-                buffer[buffer.Count - 1].chargeTime++;
+                buffer[buffer.Count - 1].chargeTime += Time.deltaTime;
                 currInput = buffer[buffer.Count - 1];
                 return;
             }
@@ -818,7 +819,7 @@ public class GameWorldObject : MonoBehaviour
                     return true;
                 case 2:
                     if (buffer[startBuf].inputType == _input[0] && buffer[startBuf + 1].inputType == 5 &&
-                        buffer[startBuf + 2].inputType == _input[1] && buffer[startBuf].updateCount <= 7) return true;
+                        buffer[startBuf + 2].inputType == _input[1] && buffer[startBuf].updateCount <= .16) return true;
                     break;
                 default:
                     bool multiTap = false;

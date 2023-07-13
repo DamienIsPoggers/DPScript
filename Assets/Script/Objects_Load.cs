@@ -43,6 +43,31 @@ public class Objects_Load
                 o.collisions.Add(temp.entries[temp.entryNames[i2]].name, temp.entries[temp.entryNames[i2]]);
         }
 
+        if(load.stats != null)
+        {
+            DPS_PlayerStats stats = load.stats;
+            o.idStr = stats.characterId;
+            o.maxHealth = stats.health;
+            o.curHealth = o.maxHealth;
+            o.faceCamera = stats.faceCamera;
+            o.useArmature = stats.usesMeshes;
+            o.weightMultiplier = stats.weightMultiplier;
+            o.objectStartState = stats.startState;
+            o.walkingSpeed[0] = stats.forwardWalkingSpeed;
+            o.walkingSpeed[1] = stats.backwardsWalkingSpeed;
+            o.dashSpeed[0] = stats.initalDashingSpeed;
+            o.dashSpeed[1] = stats.dashingAccelerationRate;
+            o.dashSpeed[2] = stats.dashingMaxSpeed;
+            o.jumpSpeed[0] = stats.forwardJumpSpeed;
+            o.jumpSpeed[1] = stats.backwardsJumpSpeed;
+            o.jumpSpeed[2] = stats.jumpingHeight;
+            o.defaultGravity = stats.defualtGravity;
+            o.airActionsCount[0] = stats.airJumpCount;
+            o.airActionsCount[1] = stats.forwardAirDashCount;
+            o.airActionsCount[2] = stats.backwardsAirDashCount;
+            o.defualtAirActionsCount = o.airActionsCount;
+        }    
+
         if (load.materials.mats.Count == 0)
             yield break;
 

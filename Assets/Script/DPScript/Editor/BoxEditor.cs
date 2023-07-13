@@ -15,6 +15,8 @@ namespace DPScript.Editor
         List<EditorCollisionBox> boxes = new List<EditorCollisionBox>();
         bool sprite = false;
         uint boxLookingAt = 0;
+        entry copiedEntry;
+        box copiedBox;
 
         [MenuItem("Window/DPScript/Collision Editor")]
         public static void ShowMyWindow()
@@ -24,6 +26,9 @@ namespace DPScript.Editor
 
         void OnGUI()
         {
+            foreach (EditorCollisionBox b in boxes)
+                if (b == null)
+                    boxes.Remove(b);
             #region top
             EditorGUILayout.BeginHorizontal();
             saveToString = EditorGUILayout.TextField(saveToString, GUILayout.Width(150f));
@@ -98,6 +103,8 @@ namespace DPScript.Editor
             boxLookingAt = (uint)tempInt;
             if (GUILayout.Button("+", GUILayout.Width(25f)))
                 boxLookingAt++;
+            if (GUILayout.Button("Update Box Rendering", GUILayout.Width(150f)))
+                updateBoxes();
             if (boxLookingAt >= col.entries[loadedCol].boxCount)
             {
                 GUILayout.Label("          Box doesnt exist");
@@ -144,8 +151,29 @@ namespace DPScript.Editor
                 box.z[1]++;
             EditorGUILayout.EndHorizontal();
 
-            #endregion
+            EditorGUILayout.BeginHorizontal();
+            box.type = (byte)EditorGUILayout.IntField(box.type, GUILayout.Width(75f));
+            GUILayout.Label("Box type");
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            box.id = (byte)EditorGUILayout.IntField(box.id, GUILayout.Width(75f));
+            GUILayout.Label("Box id");
+            EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Copy Collision", GUILayout.Width(95f)))
+                copyCol();
+            if (GUILayout.Button("Paste Collision", GUILayout.Width(95f)))
+                pasteCol();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Copy Box", GUILayout.Width(95f)))
+                copyBox();
+            if (GUILayout.Button("Paste Box", GUILayout.Width(95f)))
+                pasteBox();
+            EditorGUILayout.EndHorizontal();
+
+            #endregion
         }
 
         void save()
@@ -175,6 +203,7 @@ namespace DPScript.Editor
         {
             col.entries.Add(loadedCol, new collisionEntry());
             col.entryNames.Add(loadedCol);
+            col.entries[loadedCol].name = loadedCol;
         }
 
         void updateSprite()
@@ -218,7 +247,8 @@ namespace DPScript.Editor
             if (Selection.activeGameObject == null || Selection.activeGameObject.GetComponent<GameWorldObject>() == null || !col.entries.ContainsKey(loadedCol))
             {
                 foreach (EditorCollisionBox box in boxes)
-                    DestroyImmediate(box.gameObject);
+                    if(box != null)
+                        DestroyImmediate(box.gameObject);
                 boxes.Clear();
                 return;
             }
@@ -235,16 +265,18 @@ namespace DPScript.Editor
                     for(int i = boxes.Count; i < col.entries[loadedCol].boxCount; i++)
                     {
                         Transform temp = Selection.activeTransform.Find("Collision");
-                        Debug.Log(temp.name);
                         GameObject box = new GameObject("Temp");
                         box.transform.parent = temp;
                         box.transform.localPosition = Vector3.zero;
                         box.transform.localEulerAngles = Vector3.zero;
                         box.AddComponent<EditorCollisionBox>();
-                        box.GetComponent<EditorCollisionBox>().create(col.entries[loadedCol].boxes[i], col.entries[loadedCol].sphere);
+                        box.GetComponent<EditorCollisionBox>().update(col.entries[loadedCol].boxes[i], col.entries[loadedCol].sphere);
                         boxes.Add(box.GetComponent<EditorCollisionBox>());
                     }
             }
+            else
+                for(int i = 0; i < col.entries[loadedCol].boxCount; i++)
+                    boxes[i].update(col.entries[loadedCol].boxes[i], col.entries[loadedCol].sphere);
         }
 
         void addBox()
@@ -259,6 +291,106 @@ namespace DPScript.Editor
             col.entries[loadedCol].boxCount--;
             col.entries[loadedCol].boxes.RemoveAt((int)boxLookingAt);
             updateBoxes();
+        }
+
+        void copyCol()
+        {
+            copiedEntry = entry.classToStruct(col.entries[loadedCol]);
+        }
+
+        void pasteCol()
+        {
+            if (!col.entries.ContainsKey(loadedCol))
+                return;
+            col.entries[loadedCol] = entry.structToClass(copiedEntry, loadedCol);
+        }
+        
+        void copyBox()
+        {
+            if (!col.entries.ContainsKey(loadedCol) || col.entries[loadedCol].boxCount <= boxLookingAt)
+                return;
+            copiedBox = box.classToStruct(col.entries[loadedCol].boxes[(int)boxLookingAt]);
+        }
+
+        void pasteBox()
+        {
+            if (!col.entries.ContainsKey(loadedCol) || col.entries[loadedCol].boxCount <= boxLookingAt)
+                return;
+            col.entries[loadedCol].boxes[(int)boxLookingAt] = box.structToClass(copiedBox);
+        }
+
+        struct entry
+        {
+            public string name;
+            public byte boxCount;
+            public byte chunkCount;
+            public bool sphere;
+            public bool hasZ;
+            public List<string> sprites;
+            public List<collisionChunk> chunks;
+            public List<collisionBox> boxes;
+
+            public static entry classToStruct(collisionEntry e)
+            {
+                return new entry
+                {
+                    name = e.name,
+                    boxCount = e.boxCount,
+                    chunkCount = e.chunkCount,
+                    sphere = e.sphere,
+                    hasZ = e.hasZ,
+                    sprites = e.sprites,
+                    chunks = e.chunks,
+                    boxes = e.boxes
+                };
+            }
+
+            public static collisionEntry structToClass(entry e, string newName)
+            {
+                return new collisionEntry
+                {
+                    name = newName,
+                    boxCount = e.boxCount,
+                    chunkCount = e.chunkCount,
+                    sphere = e.sphere,
+                    hasZ = e.hasZ,
+                    sprites = e.sprites,
+                    boxes = e.boxes
+                };
+            }
+        }
+
+        struct box
+        {
+            public int[] x;
+            public int[] y;
+            public int[] z;
+            public byte id;
+            public byte type;
+
+            public static box classToStruct(collisionBox b)
+            {
+                return new box
+                {
+                    x = b.x,
+                    y = b.y,
+                    z = b.z,
+                    id = b.id,
+                    type = b.type,
+                };
+            }
+
+            public static collisionBox structToClass(box b)
+            {
+                return new collisionBox
+                {
+                    x = b.x,
+                    y = b.y,
+                    z = b.z,
+                    id = b.id,
+                    type = b.type,
+                };
+            }
         }
     }
 }

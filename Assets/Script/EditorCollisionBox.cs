@@ -13,7 +13,7 @@ namespace DPScript.Editor
         collisionBox box;
         bool sphere = false;
 
-        public void create(collisionBox box, bool sphere)
+        public void update(collisionBox box, bool sphere)
         {
             this.box = box;
             this.sphere = sphere;
