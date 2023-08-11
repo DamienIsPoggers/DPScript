@@ -18,6 +18,15 @@ MonoBehaviour:
   usesMeshes: 1
   weightMultiplier: 1
   startState: CmnStand
+  meshNames:
+  - sol_weapon
+  - sol_head_low
+  - sol_body
+  - dsl_body
+  - dsl_head
+  - dsl_weapon
+  - sol_head_high
+  - dsl_wings
   forwardWalkingSpeed: 4000
   backwardsWalkingSpeed: -3000
   initalDashingSpeed: 6000
@@ -30,3 +39,10 @@ MonoBehaviour:
   airJumpCount: 1
   forwardAirDashCount: 1
   backwardsAirDashCount: 1
+  generateColBox: 0
+  standingColPos: {x: 0, y: 0, z: 0}
+  standingColSize: {x: 0, y: 0, z: 0}
+  crouchingColPos: {x: 0, y: 0, z: 0}
+  crouchingColSize: {x: 0, y: 0, z: 0}
+  airealColPos: {x: 0, y: 0, z: 0}
+  airealColSize: {x: 0, y: 0, z: 0}

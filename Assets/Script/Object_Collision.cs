@@ -26,11 +26,47 @@ public class Object_Collision : MonoBehaviour
             collider.isTrigger = true;
             Vector3 size = new Vector3(box.x[1] / 2, box.y[1] / 2, box.z[1] / 2);
             Vector3 center = new Vector3((float)(box.x[0] - size.x) / 225, (float)(box.y[0] - size.y) / 225, (float)(box.z[0] - size.z) / 225);
-            size.x /= 100; //size.x = Mathf.Abs(size.x);
-            size.y /= 100; //size.y = Mathf.Abs(size.y);
-            size.z /= 100; //size.z = Mathf.Abs(size.z);
+            size.x = Mathf.Abs(size.x / 100); //size.x = Mathf.Abs(size.x);
+            size.y = Mathf.Abs(size.y / 100); //size.y = Mathf.Abs(size.y);
+            size.z = Mathf.Abs(size.z / 100); //size.z = Mathf.Abs(size.z);
             collider.size = size;
             collider.center = center;
+        }
+    }
+
+    public void init(Vector3 pos, Vector3 size, byte id, byte type, bool sphere, GameWorldObject player, GameWorldObject parent)
+    {
+        box = new collisionBox();
+        box.id = id;
+        box.type = type;
+        this.player = player;
+        this.parent = parent;
+        this.sphere = sphere;
+
+        if(sphere)
+        {
+
+        }
+        else
+        {
+            BoxCollider collider = gameObject.AddComponent<BoxCollider>();
+            collider.isTrigger = true;
+            collider.size = size;
+            collider.center = pos;
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if(sphere)
+        {
+            SphereCollider col = GetComponent<SphereCollider>();
+            col.radius = Mathf.Abs(col.radius);
+        }
+        else
+        {
+            BoxCollider col = GetComponent<BoxCollider>();
+            col.size = new Vector3(Mathf.Abs(col.size.x), Mathf.Abs(col.size.y), Mathf.Abs(col.size.z));
         }
     }
 

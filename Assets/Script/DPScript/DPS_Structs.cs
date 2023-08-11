@@ -79,6 +79,23 @@ namespace DPScript
         public List<string> sprites = new List<string>();
         public List<collisionChunk> chunks = new List<collisionChunk>();
         public List<collisionBox> boxes = new List<collisionBox>();
+
+        public static bool containsBoxType(collisionEntry entry, int type)
+        {
+            bool rtrn = false;
+            for(int i = 0; i < entry.boxCount; i++)
+                if (entry.boxes[i].type == type)
+                    rtrn = true;
+            return rtrn;
+        }
+
+        public override string ToString()
+        {
+            string rtrn = "";
+            rtrn += "name: " + this.name + ", boxes: " + this.boxCount + ", chunks: " + this.chunkCount + "\n" +
+                "sphere: " + this.sphere.ToString() + ", hasZ: " + this.hasZ;
+            return rtrn;
+        }
     }
 
     public class collisionFile

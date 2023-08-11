@@ -21,11 +21,15 @@ public class GameWorldObject : MonoBehaviour
     public string idStr;
 
     DPS_ObjectCommand commands;
+    [SerializeField]
     DPS_AudioManager audioManager;
+    [SerializeField]
     DPS_EffectManager effectManager;
     Transform cameraMain;
+    [SerializeField]
     Transform meshParent;
 
+    [SerializeField]
     GameObject CollisionChild;
 
     public Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
@@ -35,6 +39,7 @@ public class GameWorldObject : MonoBehaviour
     public int curHealth = 1, maxHealth = 1;
     public int tick = 0, hitstopTick = 0, onStage = 0, scriptPos = 0;
     public ObjectDir dir = (ObjectDir)1;
+    public ObjectDirType dirType = ObjectDirType.scale;
     public string curState = "", lastState = "", nextState = "", landingState = "";
     public bool landToState = false;
     public string curCollision = "", lastCollision = "", lerpCollision = "";
@@ -50,7 +55,7 @@ public class GameWorldObject : MonoBehaviour
     public Vector3 scale = Vector3.one;
     public byte stateType = 0;
     public bool stateHasHit = false;
-    public int comboCounter = 0;
+    public int comboCounter = 0, addComboHit = 1;
     public bool momentumPause = false;
     public bool rest = false, willRest = false, lerping = false, switchingState = false;
     public string returnString = "";
@@ -90,7 +95,9 @@ public class GameWorldObject : MonoBehaviour
 
     public PlayerControls playerControls;
 
+    [SerializeField]
     private InputElement currInput = new InputElement(5);
+    [SerializeField]
     private List<InputElement> buffer = new List<InputElement>();
 
     //some various variables for misc stuff
@@ -102,6 +109,7 @@ public class GameWorldObject : MonoBehaviour
     public int defaultGravity = -900;
     public float weightMultiplier = 1;
 
+    public bool inHitstun = false;
     public int hitstun = 0;
 
     public byte[] hitAnims = { 0, 0, 0 };
@@ -123,6 +131,11 @@ public class GameWorldObject : MonoBehaviour
     public Vector3 killCamAnimOffset = Vector3.zero, killCamAnimRot = Vector3.zero;
     public int killCamAnimBlendInTime = 0, killCamAnimBlendOutTime = 0;
 
+    public bool comboIsValid = true, isInCombo = false;
+
+    public int isInIf = 0;
+    public int requestedLabel = -1;
+
 
     [SerializeField]
     bool isInDebug = false;
@@ -132,17 +145,25 @@ public class GameWorldObject : MonoBehaviour
     public bool initalized = false;
     public bool ignoreInputs = false;
 
-    private float timeUpdate = 0;
+    public bool generateColBox = false;
+    public Vector3 standingColPos = Vector3.zero;
+    public Vector3 standingColSize = Vector3.zero;
+    public Vector3 crouchingColPos = Vector3.zero;
+    public Vector3 crouchingColSize = Vector3.zero;
+    public Vector3 airealColPos = Vector3.zero;
+    public Vector3 airealColSize = Vector3.zero;
+
+    public void recallAwake()
+    {
+        Awake();
+    }
 
     private void Awake()
     {
         commands = gameObject.GetComponent<DPS_ObjectCommand>();
-        audioManager = gameObject.GetComponent<DPS_AudioManager>();
-        effectManager = gameObject.GetComponent<DPS_EffectManager>();
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
         playerControls = new PlayerControls();
-        meshParent = transform.Find("Mesh");
 
         for (int i = 0; i < armatureList.Count; i++)
         {
@@ -151,17 +172,11 @@ public class GameWorldObject : MonoBehaviour
             renderers.Add(armatureList[i], meshParent.Find(armatureList[i]).GetComponentInChildren<SkinnedMeshRenderer>());
         }
 
-        CollisionChild = transform.Find("Collision").gameObject;
-        spriteAnimator = transform.Find("Sprites").GetComponent<Animator>();
-
         if (debugNoLoad)
             return;
 
         if (isInDebug)
-        {
-            Objects_Load tempLoad = new Objects_Load();
-            tempLoad.debugLoad("Char/" + idStr + "/" + idStr + "_load", this, idStr, true);
-        }
+            Objects_Load.debugLoad("Char/" + idStr + "/" + idStr + "_load", this, idStr, true);
     }
 
     private void Start()
@@ -220,7 +235,14 @@ public class GameWorldObject : MonoBehaviour
         if (debugNoLoad)
             return;
 
-        
+        if (opponent.inHitstun)
+        {
+            isInCombo = true;
+            if (opponent.hitstun <= 0)
+                comboIsValid = false;
+        }
+        else
+            comboCounter = 0;
 
         if (isPlayer)
             inputUpdate();
@@ -299,6 +321,8 @@ public class GameWorldObject : MonoBehaviour
             if (scriptPos + 1 > states[curState].commands.Count)
             { commands.enterState(nextState); continue; }
             commands.objSwitchCase(states[curState].commands[scriptPos]);
+            if (requestedLabel >= 0 && isInIf == 0)
+                commands.sendToLabel((uint)requestedLabel);
             if (switchingState)
                 continue;
             if (!rest || states[curState].commands[scriptPos].id == 3)
@@ -321,6 +345,7 @@ public class GameWorldObject : MonoBehaviour
                 loadedCollisions[0].kill();
 
         if (collisions.ContainsKey(curCollision))
+        {
             for (int i = 0; i < collisions[curCollision].boxCount; i++)
             {
                 GameObject col = new GameObject();
@@ -331,10 +356,36 @@ public class GameWorldObject : MonoBehaviour
                 col.transform.localScale = scale;
                 col.transform.parent = CollisionChild.transform;
                 Object_Collision temp = col.AddComponent<Object_Collision>();
-                temp.init(collisions[curCollision].boxes[i], collisions[curCollision].sphere, this, this);
+                temp.init(collisions[curCollision].boxes[i], collisions[curCollision].sphere, player, this);
                 loadedCollisions.Add(temp);
                 Battle_Manager.Instance.collisions.Add(temp);
             }
+            if (!collisionEntry.containsBoxType(collisions[curCollision], 0) && generateColBox)
+            {
+                GameObject col = new GameObject();
+                col.transform.position = transform.position;
+                col.transform.rotation = transform.rotation;
+                if (dir == ObjectDir.dir_Left)
+                    col.transform.Rotate(0, 180, 0);
+                col.transform.localScale = scale;
+                col.transform.parent = CollisionChild.transform;
+                Object_Collision temp = col.AddComponent<Object_Collision>();
+                switch (stateType)
+                {
+                    case 0:
+                        temp.init(standingColPos, standingColSize, 0, 0, collisions[curCollision].sphere, player, this);
+                        break;
+                    case 1:
+                        temp.init(crouchingColPos, crouchingColSize, 0, 0, collisions[curCollision].sphere, player, this);
+                        break;
+                    case 2:
+                        temp.init(airealColPos, airealColSize, 0, 0, collisions[curCollision].sphere, player, this);
+                        break;
+                }
+                loadedCollisions.Add(temp);
+                Battle_Manager.Instance.collisions.Add(temp);
+            }
+        }
     }
 
     private void switchSprite()
@@ -353,7 +404,6 @@ public class GameWorldObject : MonoBehaviour
                     armatures[armatureList[i]].Play(stateId, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 0f;
                 }
-
             }
         else if(spriteAnimator.HasState(0, stateId))
         {
@@ -377,6 +427,11 @@ public class GameWorldObject : MonoBehaviour
                     armatures[armatureList[i]].speed = 1;
                 }
             }
+        else if (spriteAnimator.HasState(0, stateId))
+        {
+            spriteAnimator.Play(stateId, 0, (float)frame * (1f / 12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
+            spriteAnimator.speed = 1f;
+        }
     }
 
     private void rotateToCamera()
@@ -388,7 +443,10 @@ public class GameWorldObject : MonoBehaviour
         }
         else
             meshParent.localEulerAngles = Vector3.zero;
-        transform.localEulerAngles = rotation;
+        if(dirType == ObjectDirType.rotate)
+            transform.localEulerAngles = rotation + new Vector3(0, 180, 0);
+        else
+            transform.localEulerAngles = rotation;
     }
 
     private void positionUpdate()
@@ -444,7 +502,10 @@ public class GameWorldObject : MonoBehaviour
 
     private void scaleUpdate()
     {
-        transform.localScale = new Vector3(scale.x * (int)dir, scale.y, scale.z);
+        if(dirType == ObjectDirType.scale)
+            transform.localScale = new Vector3(scale.x * (int)dir, scale.y, scale.z);
+        else
+            transform.localScale = new Vector3(scale.x, scale.y, scale.z);
         CollisionChild.transform.localScale.Set(Mathf.Abs(scale.x), scale.y, scale.z);
     }
 
@@ -502,7 +563,7 @@ public class GameWorldObject : MonoBehaviour
             if (attacking.armourTypes[attacking.stateType] <= hitTypes[attacking.stateType])
             {
                 triggerUpon(5);
-                comboCounter++;
+                comboCounter += addComboHit;
                 cancelableStates.AddRange(hitCancels);
                 if (hitEff_type == 0)
                     Battle_Manager.Instance.commonPlayer.spawnEffect(hitEff_str, hitEff_offset /*+= new
@@ -521,6 +582,7 @@ public class GameWorldObject : MonoBehaviour
             willHit = false;
             stateHasHit = true;
             hitboxesDisabled = true;
+            comboIsValid = true;
         }
 
         if(willBeHit)
@@ -543,6 +605,7 @@ public class GameWorldObject : MonoBehaviour
                 hitstun = attacker.attackHitstun;
                 globalVariables[18] = hitstun;
                 rest = false;
+                dir = (ObjectDir)(-(int)attacker.dir);
                 tickUpdate();
                 colUpdate();
             }
@@ -904,4 +967,11 @@ public enum ObjectDir
 {
     dir_Right = 1,
     dir_Left = -1,
+}
+
+[Serializable]
+public enum ObjectDirType
+{
+    scale,
+    rotate,
 }

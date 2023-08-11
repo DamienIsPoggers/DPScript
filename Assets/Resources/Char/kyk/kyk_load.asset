@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65590532656e27479ae2da13b2758f8, type: 3}
+  m_Name: kyk_load
+  m_EditorClassIdentifier: 
+  scriptLoad:
+  - {fileID: 4900000, guid: 2e3faeddb44a99e4cbe4ec60afaae826, type: 3}
+  cmnScriptLoad:
+  - {fileID: 4900000, guid: 0a641a0c8cf002f4ca90c1c0446d7f15, type: 3}
+  colLoad:
+  - {fileID: 4900000, guid: db996d043f6761a4faf570b0619be345, type: 3}
+  prefab: {fileID: 1501774452787482784, guid: df556bc91ec73d44b821189a66ff8cbe, type: 3}
+  materials: {fileID: 11400000, guid: 49e97b48c64a60e49ae123a7148447d9, type: 2}
+  stats: {fileID: 11400000, guid: a8f892e35e7f2ae48868ecf4e3d96ab4, type: 2}
+  voices: []
+  announcerLine: {fileID: 0}

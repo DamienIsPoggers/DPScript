@@ -19,7 +19,6 @@ public class DebugMenu : MonoBehaviour
 
     byte[] objectToSpawn = new byte[255];
     int objectSpawnColor = 0, inputTypeCheck = 0;
-    Objects_Load loading = new Objects_Load();
 
     void Start()
     {
@@ -93,7 +92,7 @@ public class DebugMenu : MonoBehaviour
                     ImGui.InputInt("Color", ref objectSpawnColor);
                     if (ImGui.Button("Spawn"))
                     {
-                        StartCoroutine(loading.mainLoad(Resources.Load<DPS_ObjectLoad>(Encoding.ASCII.GetString(objectToSpawn).Replace("\0", string.Empty)), objectSpawnColor));
+                        StartCoroutine(Objects_Load.mainLoad(Resources.Load<DPS_ObjectLoad>(Encoding.ASCII.GetString(objectToSpawn).Replace("\0", string.Empty)), objectSpawnColor));
                         soundToPlay.Add(new byte[32]);
                         stateToEnter.Add(new byte[32]);
                         effectToCall.Add(new byte[32]);

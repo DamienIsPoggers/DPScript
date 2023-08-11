@@ -39,8 +39,20 @@ namespace DPScript
                 uponCode.commands.Add(com);
                 return;
             }
-            if (ifFailed && com.id != 17)
-                return;
+            if (ifFailed)
+            {
+                if (com.id >= 13 && com.id <= 16)
+                {
+                    o.isInIf++;
+                    return;
+                }
+                else if(com.id == 17)
+                {
+                    o.isInIf--;
+                    if (o.isInIf! > 0)
+                        return;
+                }
+            }
 
             switch(com.id)
             {
@@ -105,7 +117,7 @@ namespace DPScript
                     createVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
                     break;
                 case 20:
-                    editVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
+                    editVar(com.byteArgs[0], com.intArgs[0], com.byteArgs[1], com);
                     break;
                 case 23:
                     o.returnInt = Convert.ToInt32(compareNum(com));
@@ -311,6 +323,12 @@ namespace DPScript
                 case 169:
                     attackRefreshHit();
                     break;
+                case 190:
+                    addComboCounter(com.intArgs[0]);
+                    break;
+                case 191:
+                    addComboCounterOnHit(com.intArgs[0]);
+                    break;
             }
         }
 
@@ -370,7 +388,7 @@ namespace DPScript
                 o.labelPositions.Add(pos, scriptPos);
         }
 
-        void sendToLabel(uint pos)
+        public void sendToLabel(uint pos)
         {
             if (!o.labelPositions.ContainsKey(pos))
             {
@@ -389,8 +407,15 @@ namespace DPScript
                 }
             }
 
+            if(o.isInIf > 0)
+            {
+                o.requestedLabel = (int)pos;
+                return;
+            }
+
             o.willRest = false;
             o.scriptPos = o.labelPositions[pos];
+            o.requestedLabel = -1;
         }
 
         public void enterState(string state)
@@ -505,8 +530,30 @@ namespace DPScript
                 o.tempVariables.Add(id, data);
         }
 
-        public void editVar(byte table, int id, int data)
+        public void editVar(byte table, int id, byte type, scriptCommand com)
         {
+            int data = 0;
+            switch(type)
+            {
+                default:
+                case 0:
+                    data = o.globalVariables[com.intArgs[1]];
+                    break;
+                case 1:
+                    data = o.tempVariables[com.intArgs[1]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0]);
+                    data = o.returnInt;
+                    break;
+                case 3:
+                    data = o.opponent.globalVariables[com.intArgs[1]];
+                    break;
+                case 4:
+                    data = com.intArgs[1];
+                    break;
+            }
+
             if (table == 0)
                 o.globalVariables[id] = data;
             else
@@ -944,6 +991,16 @@ namespace DPScript
                 o.spriteAnimator.speed = speed;
         }
 
+        public void addComboCounter(int i)
+        {
+            o.comboCounter += i;
+        }
+
+        public void addComboCounterOnHit(int i)
+        {
+            o.addComboHit = i;
+        }
+
         #endregion
 
         #region ifCommands
@@ -986,6 +1043,7 @@ namespace DPScript
             {
                 ifFailed = false;
                 canElse = false;
+                o.isInIf++;
             }
         }
 
@@ -995,6 +1053,7 @@ namespace DPScript
                 return;
 
             canElse = false;
+            o.isInIf++;
         }
 
         void elseIf(scriptCommand com)
@@ -1035,6 +1094,7 @@ namespace DPScript
             {
                 ifFailed = false;
                 canElse = false;
+                o.isInIf++;
             }
         }
 
@@ -1076,6 +1136,7 @@ namespace DPScript
             {
                 ifFailed = false;
                 canElse = false;
+                o.isInIf++;
             }    
         }
 
@@ -1117,12 +1178,14 @@ namespace DPScript
             {
                 ifFailed = false;
                 canElse = false;
+                o.isInIf++;
             }
         }
 
         void endIf()
         {
             ifFailed = false;
+            o.isInIf--;
         }
 
         #endregion
@@ -1198,8 +1261,8 @@ namespace DPScript
         #region upon
 
 
-        private uponEntry uponCode;
-        private bool isInUpon;
+        private uponEntry uponCode = new uponEntry();
+        private bool isInUpon = false;
 
         private void upon(byte type)
         {

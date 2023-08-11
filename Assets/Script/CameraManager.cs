@@ -35,12 +35,21 @@ public class CameraManager : MonoBehaviour
 
     void Start()
     {
-        p1 = Battle_Manager.Instance.players[0].transform;
-        p2 = Battle_Manager.Instance.players[1].transform;
+
     }
 
     void Update()
     {
+        if (p1 == null || p2 == null)
+        {
+            if (Battle_Manager.Instance.players.Count >= 2)
+            {
+                p1 = Battle_Manager.Instance.players[0].transform;
+                p2 = Battle_Manager.Instance.players[1].transform;
+            }
+            else
+                return;
+        }
         transform.parent = Battle_Manager.Instance.stages[p1.GetComponent<GameWorldObject>().onStage].transform;
 
         if(isInAnim)

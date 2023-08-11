@@ -8,8 +8,7 @@ using UnityEditor;
 
 public class Objects_Load
 {
-
-    public IEnumerator mainLoad(DPS_ObjectLoad load, int color)
+    public static IEnumerator mainLoad(DPS_ObjectLoad load, int color, bool setNum = false, byte num = 0, int setPos = 0)
     {
         GameObject character = Object.Instantiate(load.prefab);
         GameWorldObject o = character.GetComponent<GameWorldObject>();
@@ -49,6 +48,7 @@ public class Objects_Load
             o.idStr = stats.characterId;
             o.maxHealth = stats.health;
             o.curHealth = o.maxHealth;
+            o.dirType = stats.directionType;
             o.faceCamera = stats.faceCamera;
             o.useArmature = stats.usesMeshes;
             o.weightMultiplier = stats.weightMultiplier;
@@ -66,23 +66,34 @@ public class Objects_Load
             o.airActionsCount[1] = stats.forwardAirDashCount;
             o.airActionsCount[2] = stats.backwardsAirDashCount;
             o.defualtAirActionsCount = o.airActionsCount;
+            o.armatureList = stats.meshNames;
         }    
 
-        if (load.materials.mats.Count == 0)
+        if (load.materials == null || load.materials.mats.Count == 0)
             yield break;
 
-        if(o.useArmature)
-            for(int i = 0; i < load.materials.mats[color].materials.Count; i++)
+        if (o.useArmature)
+        {
+            if (o.renderers.Count == 0)
+                o.recallAwake();
+
+            for (int i = 0; i < load.materials.mats[color].materials.Count; i++)
             {
                 DPS_ObjectMat mat = load.materials.mats[color].materials[i];
                 if (!o.renderers.ContainsKey(mat.name))
                     continue;
                 o.renderers[mat.name].materials = mat.materials.ToArray();
             }
-                
+        }
+
+        if (setNum)
+        {
+            o.playerNum = num;
+            o.locX = setPos;
+        }
     }
 
-    public void debugLoad(string path, GameWorldObject o, string id, bool debug = false)
+    public static void debugLoad(string path, GameWorldObject o, string id, bool debug = false)
     {
         dataArray_File loadFile = DPS_FileReader.loadDataArray(Resources.Load<TextAsset>(path));
 

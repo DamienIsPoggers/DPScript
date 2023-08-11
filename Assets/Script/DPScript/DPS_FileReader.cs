@@ -43,6 +43,8 @@ namespace DPScript
                     com.id = file.ReadInt32();
                     //Debug.Log(com.id);
                     DPS_CommandDB.Command temp = DPS_CommandDB.getCommand(com.id);
+                    if (temp.id == -1)
+                        Debug.Log("Command db error at " + file.BaseStream.Position + ", entry is " + entry.name);
                     //Console.WriteLine(temp.name);
                     string[] args = temp.args;
                     for (int i2 = 0; i2 < args.Length; i2++)
@@ -100,6 +102,8 @@ namespace DPScript
                         com2.id = file.ReadInt32();
                         //Debug.Log(com2.id);
                         DPS_CommandDB.Command temp2 = DPS_CommandDB.getCommand(com2.id);
+                        if(temp2.id == -1)
+                            Debug.Log("Command db error at " + file.BaseStream.Position);
                         //Debug.Log(temp2.name);
                         string[] args = temp2.args;
                         for (int j2 = 0; j2 < args.Length; j2++)
@@ -202,6 +206,13 @@ namespace DPScript
                     if (entry.hasZ)
                         box.z = new int[] { file.ReadInt32(), file.ReadInt32() };
                     entry.boxes.Add(box);
+                }
+                //Debug.Log(entry.name); 
+                if (collision.entries.ContainsKey(entry.name))
+                {
+                    Debug.Log(entry.name + ", entry found at " + file.BaseStream.Position);
+                    //Debug.Log(collision.entryNames[collision.entryNames.Count - 1]);
+                    continue; 
                 }
                 collision.entries.Add(entry.name, entry);
                 collision.entryNames.Add(entry.name);
