@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
 using DPScript.Loading;
-using System.Linq;
-using UnityEditor;
 
 public class Objects_Load
 {
@@ -44,7 +42,7 @@ public class Objects_Load
 
         if(load.stats != null)
         {
-            DPS_PlayerStats stats = load.stats;
+            DPS_PlayerStats stats = Object.Instantiate(load.stats);
             o.idStr = stats.characterId;
             o.maxHealth = stats.health;
             o.curHealth = o.maxHealth;
@@ -82,14 +80,21 @@ public class Objects_Load
                 DPS_ObjectMat mat = load.materials.mats[color].materials[i];
                 if (!o.renderers.ContainsKey(mat.name))
                     continue;
-                o.renderers[mat.name].materials = mat.materials.ToArray();
+                List<Material> newMat = new List<Material>();
+                for (int j = 0; j < mat.materials.Count; j++)
+                    newMat.Add(Object.Instantiate(mat.materials[j]));
+                o.renderers[mat.name].materials = newMat.ToArray();
             }
         }
+        else
+            o.spriteChild.material = Object.Instantiate(load.materials.mats[color].spriteMaterials[0]);
 
         if (setNum)
         {
             o.playerNum = num;
             o.locX = setPos;
+            if (num == 2)
+                o.dir = ObjectDir.dir_Left;
         }
     }
 

@@ -188,6 +188,10 @@ namespace DPScript
                 case 130:
                     temp.args = new string[] { "1f" };
                     break;
+                case 131:
+                case 132:
+                    temp.args = new string[] { "1s", "1u", "1h", "1i" };
+                    break;
                 case 150:
                 case 151:
                 case 152:

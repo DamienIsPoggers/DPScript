@@ -6,10 +6,8 @@ namespace DPScript
 {
     public class DPS_AudioManager : MonoBehaviour
     {
-        [SerializeField]
-        List<AudioClip> soundList = new List<AudioClip>(), voiceList = new List<AudioClip>();
-        [SerializeField]
-        List<string> soundNames = new List<string>(), voiceNames = new List<string>();
+        public List<AudioClip> soundList = new List<AudioClip>(), voiceList = new List<AudioClip>();
+        public List<string> soundNames = new List<string>(), voiceNames = new List<string>();
         public AudioSource voiceParent;
         public Transform soundsParent;
 

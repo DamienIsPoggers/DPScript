@@ -7,41 +7,20 @@ using UnityEditor;
 
 namespace DPScript
 {
-    public class DPS_ObjectCommand : MonoBehaviour
+    public static class DPS_ObjectCommand
     {
-        [SerializeField]
-        GameWorldObject o;
-        [SerializeField]
-        GameWorldObject p;
-        [SerializeField]
-        GameWorldObject owner;
-        DPS_EffectManager e;
-        DPS_AudioManager a;
-
-
-        public void Start()
-        {
-            o = gameObject.GetComponent<GameWorldObject>();
-            owner = o;
-            p = o.player;
-            e = gameObject.GetComponent<DPS_EffectManager>();
-            a = gameObject.GetComponent<DPS_AudioManager>();
-        }
-
         #region switchCase
 
-        public void objSwitchCase(scriptCommand com)
+        public static void objSwitchCase(scriptCommand com, GameWorldObject o)
         {
-            if (p == null)
-                p = o.player;
-            if (isInUpon && com.id != 31)
+            if (o.isInUpon && com.id != 31)
             {
-                uponCode.commands.Add(com);
+                o.uponCodeCreate.commands.Add(com);
                 return;
             }
-            if (ifFailed)
+            if (o.ifFailed && !o.isInUpon)
             {
-                if (com.id >= 13 && com.id <= 16)
+                if (com.id >= 12 && com.id <= 16)
                 {
                     o.isInIf++;
                     return;
@@ -54,206 +33,206 @@ namespace DPScript
                 }
             }
 
-            switch(com.id)
+            switch((DPS_CommandEnum)com.id)
             {
-                case 1:
-                    sprite(com.stringArgs[0], com.uintArgs[0]);
+                case DPS_CommandEnum.ID_sprite:
+                    sprite(com.stringArgs[0], com.uintArgs[0], o);
                     break;
-                case 2:
-                    lerp(com.stringArgs[0], com.uintArgs[0]);
+                case DPS_CommandEnum.ID_lerp:
+                    lerp(com.stringArgs[0], com.uintArgs[0], o);
                     break;
-                case 3:
-                    rest();
+                case DPS_CommandEnum.ID_rest:
+                    rest(o);
                     break;
-                case 4:
-                    label(com.uintArgs[0]);
+                case DPS_CommandEnum.ID_label:
+                    label(com.uintArgs[0], o);
                     break;
-                case 5:
-                    sendToLabel(com.uintArgs[0]);
+                case DPS_CommandEnum.ID_sendToLabel:
+                    sendToLabel(com.uintArgs[0], o);
                     break;
-                case 6:
-                    enterState(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_enterState:
+                    enterState(com.stringArgs[0], o);
                     break;
-                case 7:
-                    createObject(com.stringArgs[0], com.intArgs[0], com.intArgs[1]);
+                case DPS_CommandEnum.ID_createObject:
+                    createObject(com.stringArgs[0], com.intArgs[0], com.intArgs[1], o);
                     break;
-                case 8:
-                    callSubroutine(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_callSubroutine:
+                    callSubroutine(com.stringArgs[0], o);
                     break;
-                case 10:
-                    cmnSubroutine(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_cmnSubroutine:
+                    cmnSubroutine(com.stringArgs[0], o);
                     break;
-                case 12:
-                    ifCom(com);
+                case DPS_CommandEnum.ID_if:
+                    ifCom(com, o);
                     break;
-                case 13:
-                    if (canElse)
-                        elseCom();
+                case DPS_CommandEnum.ID_else:
+                    if (o.canElse)
+                        elseCom(o);
                     else
-                        ifFailed = true;
+                        o.ifFailed = true;
                     break;
-                case 14:
-                    if (canElse)
-                        elseIf(com);
+                case DPS_CommandEnum.ID_elseIf:
+                    if (o.canElse)
+                        elseIf(com, o);
                     else
-                        ifFailed = true;
+                        o.ifFailed = true;
                     break;
-                case 15:
-                    ifNot(com);
+                case DPS_CommandEnum.ID_ifNot:
+                    ifNot(com, o);
                     break;
-                case 16:
-                    if (canElse)
-                        elseIfNot(com);
+                case DPS_CommandEnum.ID_elseIfNot:
+                    if (o.canElse)
+                        elseIfNot(com, o);
                     else
-                        ifFailed = true;
+                        o.ifFailed = true;
                     break;
-                case 17:
-                    endIf();
+                case DPS_CommandEnum.ID_endIf:
+                    endIf(o);
                     break;
-                case 18:
-                    o.returnInt = randomNum(com.intArgs[0], com.intArgs[1]);
+                case DPS_CommandEnum.ID_randomNum:
+                    o.returnInt = randomNum(com.intArgs[0], com.intArgs[1], o);
                     break;
-                case 19:
-                    createVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1]);
+                case DPS_CommandEnum.ID_createVar:
+                    createVar(com.byteArgs[0], com.intArgs[0], com.intArgs[1], o);
                     break;
-                case 20:
-                    editVar(com.byteArgs[0], com.intArgs[0], com.byteArgs[1], com);
+                case DPS_CommandEnum.ID_editVar:
+                    editVar(com.byteArgs[0], com.intArgs[0], com.byteArgs[1], com, o);
                     break;
-                case 23:
-                    o.returnInt = Convert.ToInt32(compareNum(com));
+                case DPS_CommandEnum.ID_compareNum:
+                    o.returnInt = Convert.ToInt32(compareNum(com, o));
                     break;
-                case 24:
+                case DPS_CommandEnum.ID_checkInput:
                     o.returnInt = Convert.ToInt32(o.input_CanInput(com.byteArgs[0], "", 1, 0));
                     break;
-                case 30:
-                    upon(com.byteArgs[0]);
+                case DPS_CommandEnum.ID_upon:
+                    upon(com.byteArgs[0], o);
                     break;
-                case 31:
-                    uponEnd();
+                case DPS_CommandEnum.ID_uponEnd:
+                    uponEnd(o);
                     break;
-                case 32:
+                case DPS_CommandEnum.ID_triggerUpon:
                     o.triggerUpon(com.byteArgs[0]);
                     break;
-                case 33:
-                    clearUpon(com.byteArgs[0]);
+                case DPS_CommandEnum.ID_clearUpon:
+                    clearUpon(com.byteArgs[0], o);
                     break;
-                case 34:
+                case DPS_CommandEnum.ID_callEffect:
                     if (com.byteArgs[0] == 0)
                         Battle_Manager.Instance.commonPlayer.spawnEffect(com.stringArgs[0],
                             new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
                             com.uintArgs[0], o);
                     else
-                        e.spawnEffect(com.stringArgs[0], new Vector3(com.floatArgs[0], 
+                        o.effectManager.spawnEffect(com.stringArgs[0], new Vector3(com.floatArgs[0], 
                             com.floatArgs[1], com.floatArgs[2]), com.uintArgs[0]);
                     break;
-                case 40:
-                    physicsXImpulse(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_physicsXImpulse:
+                    physicsXImpulse(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 41:
-                    physicsYImpulse(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_physicsYImpulse:
+                    physicsYImpulse(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 42:
-                    physicsZImpulse(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_physicsZImpulse:
+                    physicsZImpulse(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 43:
-                    xImpulseModifier(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_xImpulseModifier:
+                    xImpulseModifier(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 44:
-                    yImpulseModifier(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_yImpulseModifier:
+                    yImpulseModifier(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 45:
-                    yImpulseModifier(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_zImpulseModifier:
+                    zImpulseModifier(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 46:
-                    addPosX(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_addPosX:
+                    addPosX(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 47:
-                    addPosY(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_addPosY:
+                    addPosY(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 48:
-                    addPosZ(com.byteArgs[0], com.intArgs[0]);
+                case DPS_CommandEnum.ID_addPosZ:
+                    addPosZ(com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 49:
-                    o.returnInt = getDistance(o.worldObjects[com.intArgs[0]]);
+                case DPS_CommandEnum.ID_getDistance:
+                    o.returnInt = getDistance(o.worldObjects[com.intArgs[0]], o);
                     break;
-                case 60:
-                    o.returnInt = doMath(com);
+                case DPS_CommandEnum.ID_doMath:
+                    o.returnInt = doMath(com, o);
                     break;
-                case 100:
-                    stateRegister(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_stateRegister:
+                    stateRegister(com.stringArgs[0], o);
                     break;
-                case 101:
+                case DPS_CommandEnum.ID_stateConditions:
                     stateConditions(com.byteArgs[0], com.byteArgs[1], com.byteArgs[2],
-                        com.byteArgs[3], com.byteArgs[4], com.byteArgs[5], com.byteArgs[6]);
+                        com.byteArgs[3], com.byteArgs[4], com.byteArgs[5], com.byteArgs[6], o);
                     break;
-                case 102:
-                    stateInput(com.byteArgs[0]);
+                case DPS_CommandEnum.ID_stateInput:
+                    stateInput(com.byteArgs[0], o);
                     break;
-                case 103:
+                case DPS_CommandEnum.ID_stateButton:
                     stateButton(com.byteArgs[0], com.byteArgs[1], com.byteArgs[2], com.byteArgs[3], 
-                        com.byteArgs[4], com.byteArgs[5], com.byteArgs[6], com.byteArgs[7]);
+                        com.byteArgs[4], com.byteArgs[5], com.byteArgs[6], com.byteArgs[7], o);
                     break;
-                case 104:
-                    stateConditionsSubroutine(com.byteArgs[0], com.stringArgs[0]);
+                case DPS_CommandEnum.ID_stateConditionsSubroutine:
+                    stateConditionsSubroutine(com.byteArgs[0], com.stringArgs[0], o);
                     break;
-                case 105:
-                    stateMeterCost(com.uintArgs[0]);
+                case DPS_CommandEnum.ID_stateMeterCost:
+                    stateMeterCost(com.uintArgs[0], o);
                     break;
-                case 106:
-                    stateRegisterEnd();
+                case DPS_CommandEnum.ID_stateRegisterEnd:
+                    stateRegisterEnd(o);
                     break;
-                case 109:
-                    setHitstunState(com.byteArgs[0], com.stringArgs[0]);
+                case DPS_CommandEnum.ID_setHitstunState:
+                    setHitstunState(com.byteArgs[0], com.stringArgs[0], o);
                     break;
-                case 110:
-                    addCancel(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_addCancel:
+                    addCancel(com.stringArgs[0], o);
                     break;
-                case 111:
-                    addNeutralCancels();
+                case DPS_CommandEnum.ID_addNeutralCancels:
+                    addNeutralCancels(o);
                     break;
-                case 112:
-                    addNormalCancels();
+                case DPS_CommandEnum.ID_addNormalCancels:
+                    addNormalCancels(o);
                     break;
-                case 113:
-                    addSpecialCancels();
+                case DPS_CommandEnum.ID_addSpecialCancels:
+                    addSpecialCancels(o);
                     break;
-                case 114:
-                    addSuperCancels();
+                case DPS_CommandEnum.ID_addSuperCancels:
+                    addSuperCancels(o);
                     break;
-                case 115:
-                    hitCancel(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_hitCancel:
+                    hitCancel(com.stringArgs[0], o);
                     break;
-                case 116:
-                    blockCancel(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_blockCancel:
+                    blockCancel(com.stringArgs[0], o);
                     break;
-                case 117:
-                    hitOrBlockCancel(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_hitOrBlockCancel:
+                    hitOrBlockCancel(com.stringArgs[0], o);
                     break;
-                case 119:
-                    removeCancel(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_removeCancel:
+                    removeCancel(com.stringArgs[0], o);
                     break;
-                case 120:
-                    setStateType(com.byteArgs[0]);
+                case DPS_CommandEnum.ID_setStateType:
+                    setStateType(com.byteArgs[0], o);
                     break;
-                case 121:
-                    setNextState(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_setNextState:
+                    setNextState(com.stringArgs[0], o);
                     break;
-                case 122:
-                    setLandingState(com.stringArgs[0]);
+                case DPS_CommandEnum.ID_setLandingState:
+                    setLandingState(com.stringArgs[0], o);
                     break;
-                case 123:
-                    transferMomentum(com.boolArgs[0]);
+                case DPS_CommandEnum.ID_transferMomentum:
+                    transferMomentum(com.boolArgs[0], o);
                     break;
-                case 124:
-                    pauseMomentum(com.boolArgs[0]);
+                case DPS_CommandEnum.ID_pauseMomentum:
+                    pauseMomentum(com.boolArgs[0], o);
                     break;
-                case 125:
-                    exitState();
+                case DPS_CommandEnum.ID_exitState:
+                    exitState(o);
                     break;
-                case 126:
-                    playAnimation(com.stringArgs[0], com.floatArgs[0]);
+                case DPS_CommandEnum.ID_playAnimation:
+                    playAnimation(com.stringArgs[0], com.floatArgs[0], o);
                     break;
-                case 127:
+                case DPS_CommandEnum.ID_playCameraAnimation:
                     Transform focus = null;
                     if (com.byteArgs[0] == 0)
                         focus = o.transform;
@@ -261,73 +240,79 @@ namespace DPScript
                         focus, com.uintArgs[0], com.uintArgs[1], new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]),
                         new Vector3(com.floatArgs[3], com.floatArgs[4], com.floatArgs[5]));
                     break;
-                case 129:
-                    showMesh(com.stringArgs[0], com.boolArgs[0]);
+                case DPS_CommandEnum.ID_showMesh:
+                    showMesh(com.stringArgs[0], com.boolArgs[0], o);
                     break;
-                case 130:
-                    setAnimSpeed(com.floatArgs[0]);
+                case DPS_CommandEnum.ID_setAnimSpeed:
+                    setAnimSpeed(com.floatArgs[0], o);
                     break;
-                case 150:
-                    attackDamage(com);
+                case DPS_CommandEnum.ID_setSpriteIf:
+                    setSpriteIf(com.stringArgs[0], com.uintArgs[0], com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 151:
-                    attackPushbackX(com);
+                case DPS_CommandEnum.ID_setSpriteIfNot:
+                    setSpriteIfNot(com.stringArgs[0], com.uintArgs[0], com.byteArgs[0], com.intArgs[0], o);
                     break;
-                case 152:
-                    attackPushbackY(com);
+                case DPS_CommandEnum.ID_attackDamage:
+                    attackDamage(com, o);
                     break;
-                case 153:
-                    attackPushbackZ(com);
+                case DPS_CommandEnum.ID_attackPushbackX:
+                    attackPushbackX(com, o);
                     break;
-                case 154:
-                    attackLaunchOpponent(com.boolArgs[0]);
+                case DPS_CommandEnum.ID_attackPushbackY:
+                    attackPushbackY(com, o);
                     break;
-                case 155:
-                    attackHitFriction(com);
+                case DPS_CommandEnum.ID_attackPushbackZ:
+                    attackPushbackZ(com, o);
                     break;
-                case 156:
-                    attackHitGravity(com);
+                case DPS_CommandEnum.ID_attackLaunchOpponent:
+                    attackLaunchOpponent(com.boolArgs[0], o);
                     break;
-                case 157:
-                    attackHitAnim(com.byteArgs[0], com.byteArgs[1]);
+                case DPS_CommandEnum.ID_attackHitFriction:
+                    attackHitFriction(com, o);
                     break;
-                case 158:
-                    attackHitstun(com.intArgs[0]);
+                case DPS_CommandEnum.ID_attackHitGravity:
+                    attackHitGravity(com, o);
                     break;
-                case 159:
-                    attackHitstop(com.intArgs[0]);
+                case DPS_CommandEnum.ID_attackHitAnim:
+                    attackHitAnim(com.byteArgs[0], com.byteArgs[1], o);
                     break;
-                case 160:
-                    attackBlockMultiplier(com.floatArgs[0]);
+                case DPS_CommandEnum.ID_attackHitstun:
+                    attackHitstun(com.intArgs[0], o);
                     break;
-                case 161:
-                    attackUntechTime(com.byteArgs[0], com.uintArgs[0]);
+                case DPS_CommandEnum.ID_attackHitstop:
+                    attackHitstop(com.intArgs[0], o);
                     break;
-                case 162:
-                    attackHardKnockdown(com.uintArgs[0]);
+                case DPS_CommandEnum.ID_attackBlockMultiplier:
+                    attackBlockMultiplier(com.floatArgs[0], o);
                     break;
-                case 163:
+                case DPS_CommandEnum.ID_attackUntechTime:
+                    attackUntechTime(com.byteArgs[0], com.uintArgs[0], o);
+                    break;
+                case DPS_CommandEnum.ID_attackHardKnockdown:
+                    attackHardKnockdown(com.uintArgs[0], o);
+                    break;
+                case DPS_CommandEnum.ID_attackHitEffect:
                     attackHitEffect(com.byteArgs[0], com.stringArgs[0], new Vector3(com.floatArgs[0],
-                        com.floatArgs[1], com.floatArgs[2]), com.uintArgs[0]);
+                        com.floatArgs[1], com.floatArgs[2]), com.uintArgs[0], o);
                     break;
-                case 164:
-                    attackCounterType(com.byteArgs[0]);
+                case DPS_CommandEnum.ID_attackCounterType:
+                    attackCounterType(com.byteArgs[0], o);
                     break;
-                case 165:
-                    attackChipDamageMultiplier(com.floatArgs[0]);
+                case DPS_CommandEnum.ID_attackChipDamageMultiplier:
+                    attackChipDamageMultiplier(com.floatArgs[0], o);
                     break;
-                case 166:
+                case DPS_CommandEnum.ID_attackUnblockableType:
                     attackUnblockableType(com.byteArgs[0], com.byteArgs[1], com.byteArgs[2],
-                        com.byteArgs[3], com.byteArgs[4], com.byteArgs[5]);
+                        com.byteArgs[3], com.byteArgs[4], com.byteArgs[5], o);
                     break;
-                case 169:
-                    attackRefreshHit();
+                case DPS_CommandEnum.ID_attackRefreshHit:
+                    attackRefreshHit(o);
                     break;
-                case 190:
-                    addComboCounter(com.intArgs[0]);
+                case DPS_CommandEnum.ID_addToComboCounter:
+                    addComboCounter(com.intArgs[0], o);
                     break;
-                case 191:
-                    addComboCounterOnHit(com.intArgs[0]);
+                case DPS_CommandEnum.ID_addToComboCounterOnHit:
+                    addComboCounterOnHit(com.intArgs[0], o);
                     break;
             }
         }
@@ -336,11 +321,11 @@ namespace DPScript
 
         #region commands
 
-        void sprite(string spr, uint tick)
+        static void sprite(string spr, uint tick, GameWorldObject o)
         {
             if (o.willRest)
             {
-                rest();
+                rest(o);
                 if (o.lerping)
                     o.lerpCollision = spr;
             }
@@ -353,11 +338,11 @@ namespace DPScript
             }
         }
 
-        void lerp(string spr, uint tick)
+        static void lerp(string spr, uint tick, GameWorldObject o)
         {
             if (o.willRest)
             {
-                rest();
+                rest(o);
                 if (o.lerping)
                     o.lerpCollision = spr;
             }
@@ -371,24 +356,24 @@ namespace DPScript
             }
         }
 
-        public void rest()
+        public static void rest(GameWorldObject o)
         {
             o.rest = true;
         }
 
-        public void label(uint pos)
+        public static void label(uint pos, GameWorldObject o)
         {
             if(!o.labelPositions.ContainsKey(pos))
                 o.labelPositions.Add(pos, o.scriptPos);
         }
 
-        public void label(uint pos, int scriptPos)
+        public static void label(uint pos, int scriptPos, GameWorldObject o)
         {
             if (!o.labelPositions.ContainsKey(pos))
                 o.labelPositions.Add(pos, scriptPos);
         }
 
-        public void sendToLabel(uint pos)
+        public static void sendToLabel(uint pos, GameWorldObject o)
         {
             if (!o.labelPositions.ContainsKey(pos))
             {
@@ -396,7 +381,7 @@ namespace DPScript
                 for(int i = o.scriptPos + 1; i < o.states[o.curState].commands.Count; i++)
                     if(o.states[o.curState].commands[i].id == 4 && o.states[o.curState].commands[i].uintArgs[0] == pos)
                     {
-                        label(o.states[o.curState].commands[i].uintArgs[0], i);
+                        label(o.states[o.curState].commands[i].uintArgs[0], o);
                         labelFound = true;
                         break;
                     }
@@ -418,7 +403,7 @@ namespace DPScript
             o.requestedLabel = -1;
         }
 
-        public void enterState(string state)
+        public static void enterState(string state, GameWorldObject o)
         {
             o.triggerUpon(1);
             o.hitOrBlockCancels.Clear();
@@ -454,18 +439,19 @@ namespace DPScript
             o.curState = state;
 
             if (o.commonSubroutines.ContainsKey(state))
-                cmnSubroutine(state);
+                cmnSubroutine(state, o);
         }
 
-        void createObject(string state, int offsetX, int offsetY)
+        static void createObject(string state, int offsetX, int offsetY, GameWorldObject o)
         {
-            GameObject sub = new GameObject(state +  "__" + o.idStr);
-            GameWorldObject obj = sub.AddComponent<GameWorldObject>();
-            DPS_AudioManager aud = sub.AddComponent<DPS_AudioManager>();
-            aud = a;
-            DPS_EffectManager eff = sub.AddComponent<DPS_EffectManager>();
-            eff = e;
-            sub.AddComponent<Rigidbody>();
+            GameObject sub = (GameObject)GameObject.Instantiate(Resources.Load("Char/DefualtChar"));
+            GameWorldObject obj = sub.GetComponent<GameWorldObject>();
+            DPS_EffectManager eff = obj.effectManager;
+            eff.effectList = o.effectManager.effectList;
+            eff.effectNames = o.effectManager.effectNames;
+            DPS_AudioManager aud = obj.audioManager;
+            aud.soundList = o.audioManager.soundList;
+            aud.soundNames = o.audioManager.soundNames;
             obj.locX = o.locX + offsetX;
             obj.locY = o.locY + offsetY;
             obj.locZ = o.locZ;
@@ -477,52 +463,35 @@ namespace DPScript
             obj.collisions = o.collisions;
             obj.dir = o.dir;
             obj.opponent = o.opponent;
-            obj.player = p;
+            obj.player = o.player;
             obj.worldObjects.Add(2, o);
             obj.tempVariables = o.tempVariables;
             obj.globalVariables = o.globalVariables;
             obj.isPlayer = false;
             obj.objectStartState = state;
-
-            GameObject mesh = new GameObject("Mesh");
-            mesh.transform.parent = sub.transform;
-            GameObject col = new GameObject("Collision");
-            col.transform.parent = sub.transform;
-            GameObject voices = new GameObject("Voices");
-            voices.transform.parent = sub.transform;
-            voices.AddComponent<AudioSource>();
-            GameObject sounds = new GameObject("Sounds");
-            sounds.transform.parent = sub.transform;
-            GameObject spr = new GameObject("Sprites");
-            SpriteRenderer sprRenderer = spr.AddComponent<SpriteRenderer>();
-            sprRenderer = o.spriteAnimator.GetComponent<SpriteRenderer>();
-            Animator sprAnim = spr.AddComponent<Animator>();
-            sprAnim = o.spriteAnimator;
-            GameObject eff2 = new GameObject("Effects");
-            eff2.transform.parent = sub.transform;
         }
 
-        public void callSubroutine(string sub)
+        public static void callSubroutine(string sub, GameWorldObject o)
         {
             if (o.subroutines.ContainsKey(sub))
                 for (int i = 0; i < o.subroutines[sub].commands.Count; i++)
-                    objSwitchCase(o.subroutines[sub].commands[i]);
+                    objSwitchCase(o.subroutines[sub].commands[i], o);
         }
 
-        void callSubroutineWithArgs(string sub, int arg1, int arg2, 
-            int arg3, int arg4, string arg5)
+        static void callSubroutineWithArgs(string sub, int arg1, int arg2, 
+            int arg3, int arg4, string arg5, GameWorldObject o)
         {
             
         }
 
-        public void cmnSubroutine(string sub)
+        public static void cmnSubroutine(string sub, GameWorldObject o)
         {
             if (o.commonSubroutines.ContainsKey(sub))
                 for (int i = 0; i < o.commonSubroutines[sub].commands.Count; i++)
-                    objSwitchCase(o.commonSubroutines[sub].commands[i]);
+                    objSwitchCase(o.commonSubroutines[sub].commands[i], o);
         }
 
-        public void createVar(byte table, int id, int data)
+        public static void createVar(byte table, int id, int data, GameWorldObject o)
         {
             if (table == 0)
                 o.globalVariables.Add(id, data);
@@ -530,7 +499,7 @@ namespace DPScript
                 o.tempVariables.Add(id, data);
         }
 
-        public void editVar(byte table, int id, byte type, scriptCommand com)
+        public static void editVar(byte table, int id, byte type, scriptCommand com, GameWorldObject o)
         {
             int data = 0;
             switch(type)
@@ -543,7 +512,7 @@ namespace DPScript
                     data = o.tempVariables[com.intArgs[1]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     data = o.returnInt;
                     break;
                 case 3:
@@ -560,7 +529,7 @@ namespace DPScript
                 o.tempVariables[id] = data;
         }
 
-        public int randomNum(int min, int max)
+        public static int randomNum(int min, int max, GameWorldObject o)
         {
             int randomNum = UnityEngine.Random.Range(1, 100);
             if(randomNum >= min && randomNum <= max)
@@ -568,7 +537,7 @@ namespace DPScript
             return 0;
         }
 
-        public bool compareNum(scriptCommand com)
+        public static bool compareNum(scriptCommand com, GameWorldObject o)
         {
             byte comNum = 0;
             byte intNum = 0;
@@ -584,7 +553,7 @@ namespace DPScript
                     intNum++;
                     break;
                 case 2:
-                    objSwitchCase(com.commands[comNum]);
+                    objSwitchCase(com.commands[comNum], o);
                     comNum++;
                     num1 = o.returnInt;
                     break;
@@ -608,7 +577,7 @@ namespace DPScript
                     num2 = o.tempVariables[com.intArgs[intNum]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[comNum]);
+                    objSwitchCase(com.commands[comNum], o);
                     num2 = o.returnInt;
                     break;
                 case 3:
@@ -635,7 +604,7 @@ namespace DPScript
             }
         }
 
-        public void physicsXImpulse(byte type, int amount)
+        public static void physicsXImpulse(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -651,7 +620,7 @@ namespace DPScript
             }
         }
 
-        public void physicsYImpulse(byte type, int amount)
+        public static void physicsYImpulse(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -667,7 +636,7 @@ namespace DPScript
             }
         }
 
-        public void physicsZImpulse(byte type, int amount)
+        public static void physicsZImpulse(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -683,7 +652,7 @@ namespace DPScript
             }
         }
 
-        public void xImpulseModifier(byte type, int amount)
+        public static void xImpulseModifier(byte type, int amount, GameWorldObject o)
         {
             switch(type)
             {
@@ -699,7 +668,7 @@ namespace DPScript
             }
         }
 
-        public void yImpulseModifier(byte type, int amount)
+        public static void yImpulseModifier(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -715,7 +684,7 @@ namespace DPScript
             }
         }
 
-        public void zImpulseModifier(byte type, int amount)
+        public static void zImpulseModifier(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -731,7 +700,7 @@ namespace DPScript
             }
         }
 
-        public void addPosX(byte type, int amount)
+        public static void addPosX(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -747,7 +716,7 @@ namespace DPScript
             }
         }
 
-        public void addPosY(byte type, int amount)
+        public static void addPosY(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -763,7 +732,7 @@ namespace DPScript
             }
         }
 
-        public void addPosZ(byte type, int amount)
+        public static void addPosZ(byte type, int amount, GameWorldObject o)
         {
             switch (type)
             {
@@ -779,12 +748,12 @@ namespace DPScript
             }
         }
 
-        public int getDistance(GameWorldObject other)
+        public static int getDistance(GameWorldObject other, GameWorldObject o)
         {
             return other.locX - o.locX;
         }
 
-        public int doMath(scriptCommand com)
+        public static int doMath(scriptCommand com, GameWorldObject o)
         {
             byte comNum = 0;
             byte intNum = 0;
@@ -800,7 +769,7 @@ namespace DPScript
                     intNum++;
                     break;
                 case 2:
-                    objSwitchCase(com.commands[comNum]);
+                    objSwitchCase(com.commands[comNum], o);
                     comNum++;
                     num1 = o.returnInt;
                     break;
@@ -824,7 +793,7 @@ namespace DPScript
                     num2 = o.tempVariables[com.intArgs[intNum]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[comNum]);
+                    objSwitchCase(com.commands[comNum], o);
                     num2 = o.returnInt;
                     break;
                 case 3:
@@ -851,14 +820,14 @@ namespace DPScript
             }
         }
 
-        public void addCancel(string state)
+        public static void addCancel(string state, GameWorldObject o)
         {
             //Debug.Log("add cancel");
             if (o.stateCancelIDs.Contains(state) && !o.cancelableStates.Contains(state))
                 o.cancelableStates.Add(state);
         }
 
-        public void addNeutralCancels()
+        public static void addNeutralCancels(GameWorldObject o)
         {
             for(int i = 0; i < o.stateCancelIDs.Count; i++)
             {
@@ -869,7 +838,7 @@ namespace DPScript
             }
         }
 
-        public void addNormalCancels()
+        public static void addNormalCancels(GameWorldObject o)
         {
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
@@ -880,7 +849,7 @@ namespace DPScript
             }
         }
 
-        public void addSpecialCancels()
+        public static void addSpecialCancels(GameWorldObject o)
         {
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
@@ -891,7 +860,7 @@ namespace DPScript
             }
         }
 
-        public void addSuperCancels()
+        public static void addSuperCancels(GameWorldObject o)
         {
             for (int i = 0; i < o.stateCancelIDs.Count; i++)
             {
@@ -902,58 +871,58 @@ namespace DPScript
             }
         }
 
-        public void hitCancel(string state)
+        public static void hitCancel(string state, GameWorldObject o)
         {
             o.hitCancels.Add(state);
         }
 
-        public void blockCancel(string state)
+        public static void blockCancel(string state, GameWorldObject o)
         {
             o.blockCancels.Add(state);
         }
 
-        public void hitOrBlockCancel(string state)
+        public static void hitOrBlockCancel(string state, GameWorldObject o)
         {
             o.hitOrBlockCancels.Add(state);
         }
 
-        public void removeCancel(string state)
+        public static void removeCancel(string state, GameWorldObject o)
         {
             o.cancelableStates.Remove(state);
         }
 
-        public void setStateType(byte type)
+        public static void setStateType(byte type, GameWorldObject o)
         {
             o.stateType = type;
         }    
 
-        public void setNextState(string state)
+        public static void setNextState(string state, GameWorldObject o)
         {
             o.nextState = state;
         }
 
-        public void setLandingState(string state)
+        public static void setLandingState(string state, GameWorldObject o)
         {
             o.landingState = state;
             o.landToState = true;
         }
 
-        public void transferMomentum(bool b)
+        public static void transferMomentum(bool b, GameWorldObject o)
         {
             o.transferMomentum = b;
         }
 
-        public void pauseMomentum(bool b)
+        public static void pauseMomentum(bool b, GameWorldObject o)
         {
             o.momentumPause = b;
         }
 
-        public void exitState()
+        public static void exitState(GameWorldObject o)
         {
-            enterState(o.nextState);
+            enterState(o.nextState, o);
         }
 
-        public void playAnimation(string state, float speed)
+        public static void playAnimation(string state, float speed, GameWorldObject o)
         {
             o.playingAnim = true;
             if(o.useArmature)
@@ -971,14 +940,14 @@ namespace DPScript
             }
         }
 
-        public void showMesh(string mesh, bool b)
+        public static void showMesh(string mesh, bool b, GameWorldObject o)
         {
             o.renderers[mesh].enabled = b;
             o.armatures[mesh].enabled = b;
             o.armatures[mesh].StopPlayback();
         }
 
-        public void setAnimSpeed(float speed)
+        public static void setAnimSpeed(float speed, GameWorldObject o)
         {
             if(o.useArmature)
                 for (int i = 0; i < o.armatureList.Count; i++)
@@ -991,12 +960,42 @@ namespace DPScript
                 o.spriteAnimator.speed = speed;
         }
 
-        public void addComboCounter(int i)
+        public static void setSpriteIf(string spr, uint time, byte varType, int var, GameWorldObject o)
+        {
+            bool set;
+            if (varType == 0)
+                set = o.globalVariables[var] > 0;
+            else
+                set = o.tempVariables[var] > 0;
+
+            if (set)
+            {
+                o.willRest = false;
+                sprite(spr, time, o);
+            }
+        }
+
+        public static void setSpriteIfNot(string spr, uint time, byte varType, int var, GameWorldObject o)
+        {
+            bool set;
+            if (varType == 0)
+                set = o.globalVariables[var] <= 0;
+            else
+                set = o.tempVariables[var] <= 0;
+
+            if (set)
+            {
+                o.willRest = false;
+                sprite(spr, time, o);
+            }
+        }
+
+        public static void addComboCounter(int i, GameWorldObject o)
         {
             o.comboCounter += i;
         }
 
-        public void addComboCounterOnHit(int i)
+        public static void addComboCounterOnHit(int i, GameWorldObject o)
         {
             o.addComboHit = i;
         }
@@ -1005,10 +1004,7 @@ namespace DPScript
 
         #region ifCommands
 
-        private bool ifFailed = false;
-        private bool canElse = false;
-
-        void ifCom(scriptCommand com)
+        static void ifCom(scriptCommand com, GameWorldObject o)
         {
             bool callCom = false;
             if (com.byteArgs[0] == 2)
@@ -1018,7 +1014,7 @@ namespace DPScript
 
             if(callCom)
             {
-                objSwitchCase(com.commands[0]);
+                objSwitchCase(com.commands[0], o);
                 checkNum = o.returnInt;
             }
             else
@@ -1036,29 +1032,29 @@ namespace DPScript
 
             if (checkNum <= 0)
             {
-                ifFailed = true;
-                canElse = true;
+                o.ifFailed = true;
+                o.canElse = true;
             }
             else
             {
-                ifFailed = false;
-                canElse = false;
+                o.ifFailed = false;
+                o.canElse = false;
                 o.isInIf++;
             }
         }
 
-        void elseCom()
+        static void elseCom(GameWorldObject o)
         {
-            if (!canElse && ifFailed)
+            if (!o.canElse && o.ifFailed)
                 return;
 
-            canElse = false;
+            o.canElse = false;
             o.isInIf++;
         }
 
-        void elseIf(scriptCommand com)
+        static void elseIf(scriptCommand com, GameWorldObject o)
         {
-            if (!canElse && ifFailed)
+            if (!o.canElse && o.ifFailed)
                 return;
 
             bool callCom = false;
@@ -1069,7 +1065,7 @@ namespace DPScript
 
             if (callCom)
             {
-                objSwitchCase(com.commands[0]);
+                objSwitchCase(com.commands[0], o);
                 checkNum = o.returnInt;
             }
             else
@@ -1087,18 +1083,18 @@ namespace DPScript
 
             if (checkNum <= 0)
             {
-                ifFailed = true;
-                canElse = true;
+                o.ifFailed = true;
+                o.canElse = true;
             }
             else
             {
-                ifFailed = false;
-                canElse = false;
+                o.ifFailed = false;
+                o.canElse = false;
                 o.isInIf++;
             }
         }
 
-        void ifNot(scriptCommand com)
+        static void ifNot(scriptCommand com, GameWorldObject o)
         {
             bool callCom = false;
             if (com.byteArgs[0] == 2)
@@ -1111,7 +1107,7 @@ namespace DPScript
                 //Debug.Log(com.commands[0].id);
                 //Debug.Log(com.commands[0].intArgs.Count);
                 //Debug.Log(com.commands.Count);
-                objSwitchCase(com.commands[0]);
+                objSwitchCase(com.commands[0], o);
                 checkNum = o.returnInt;
             }
             else
@@ -1129,20 +1125,20 @@ namespace DPScript
 
             if (checkNum > 0)
             {
-                ifFailed = true;
-                canElse = true;
+                o.ifFailed = true;
+                o.canElse = true;
             }
             else
             {
-                ifFailed = false;
-                canElse = false;
+                o.ifFailed = false;
+                o.canElse = false;
                 o.isInIf++;
             }    
         }
 
-        void elseIfNot(scriptCommand com)
+        static void elseIfNot(scriptCommand com, GameWorldObject o)
         {
-            if (!canElse && ifFailed)
+            if (!o.canElse && o.ifFailed)
                 return;
 
             bool callCom = false;
@@ -1153,7 +1149,7 @@ namespace DPScript
 
             if (callCom)
             {
-                objSwitchCase(com.commands[0]);
+                objSwitchCase(com.commands[0], o);
                 checkNum = o.returnInt;
             }
             else
@@ -1171,20 +1167,20 @@ namespace DPScript
 
             if (checkNum > 0)
             {
-                ifFailed = true;
-                canElse = true;
+                o.ifFailed = true;
+                o.canElse = true;
             }
             else
             {
-                ifFailed = false;
-                canElse = false;
+                o.ifFailed = false;
+                o.canElse = false;
                 o.isInIf++;
             }
         }
 
-        void endIf()
+        static void endIf(GameWorldObject o)
         {
-            ifFailed = false;
+            o.ifFailed = false;
             o.isInIf--;
         }
 
@@ -1192,31 +1188,29 @@ namespace DPScript
 
         #region stateRegister
 
-        StateEntry entryAdd;
-
-        public void stateRegister(string name)
+        public static void stateRegister(string name, GameWorldObject o)
         {
-            entryAdd = new StateEntry(name);
+            o.entryAdd = new StateEntry(name);
         }
 
-        public void stateConditions(byte stateType, byte usibility, byte lienant, byte attackType,
-            byte holdBuffer, byte common, byte arg7)
+        public static void stateConditions(byte stateType, byte usibility, byte lienant, byte attackType,
+            byte holdBuffer, byte common, byte arg7, GameWorldObject o)
         {
-            entryAdd.type = stateType;
-            entryAdd.useableIn = usibility;
-            entryAdd.leniantInput = lienant;
-            entryAdd.attackType = attackType;
-            entryAdd.holdBuffer = holdBuffer;
-            entryAdd.common = common;
+            o.entryAdd.type = stateType;
+            o.entryAdd.useableIn = usibility;
+            o.entryAdd.leniantInput = lienant;
+            o.entryAdd.attackType = attackType;
+            o.entryAdd.holdBuffer = holdBuffer;
+            o.entryAdd.common = common;
         }
 
-        public void stateInput(byte input)
+        public static void stateInput(byte input, GameWorldObject o)
         {
             //Debug.Log(input);
-            entryAdd.input = input;
+            o.entryAdd.input = input;
         }
 
-        public void stateButton(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h)
+        public static void stateButton(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h, GameWorldObject o)
         {
             string button = "";
 
@@ -1230,28 +1224,28 @@ namespace DPScript
             if (h > 0) button += "H";
 
             //Debug.Log(button);
-            entryAdd.button = button;
+            o.entryAdd.button = button;
         }
 
-        public void stateConditionsSubroutine(byte type, string subroutine)
+        public static void stateConditionsSubroutine(byte type, string subroutine, GameWorldObject o)
         {
-            entryAdd.useSubroutine = true;
-            entryAdd.subroutineType = type;
-            entryAdd.subroutine = subroutine;
+            o.entryAdd.useSubroutine = true;
+            o.entryAdd.subroutineType = type;
+            o.entryAdd.subroutine = subroutine;
         }
 
-        public void stateMeterCost(uint cost)
+        public static void stateMeterCost(uint cost, GameWorldObject o)
         {
-            entryAdd.meterCost = cost;
+            o.entryAdd.meterCost = cost;
         }
 
-        public void stateRegisterEnd()
+        public static void stateRegisterEnd(GameWorldObject o)
         {
-            o.stateCancels.Add(entryAdd.name, entryAdd);
-            o.stateCancelIDs.Insert(0, entryAdd.name);
+            o.stateCancels.Add(o.entryAdd.name, o.entryAdd);
+            o.stateCancelIDs.Insert(0, o.entryAdd.name);
         }
 
-        public void setHitstunState(byte animNum, string state)
+        public static void setHitstunState(byte animNum, string state, GameWorldObject o)
         {
             o.hitstunAnims.Add(animNum, state);
         }
@@ -1261,25 +1255,22 @@ namespace DPScript
         #region upon
 
 
-        private uponEntry uponCode = new uponEntry();
-        private bool isInUpon = false;
-
-        private void upon(byte type)
+        private static void upon(byte type, GameWorldObject o)
         {
-            uponCode = new uponEntry();
-            uponCode.type = type;
-            isInUpon = true;
+            o.uponCodeCreate = new uponEntry();
+            o.uponCodeCreate.type = type;
+            o.isInUpon = true;
         }
 
-        private void uponEnd()
+        private static void uponEnd(GameWorldObject o)
         {
-            if (o.uponStatements.ContainsKey(uponCode.type))
-                o.uponStatements.Remove(uponCode.type);
-            o.uponStatements.Add(uponCode.type, uponCode);
-            isInUpon = false;
+            if (o.uponStatements.ContainsKey(o.uponCodeCreate.type))
+                o.uponStatements.Remove(o.uponCodeCreate.type);
+            o.uponStatements.Add(o.uponCodeCreate.type, o.uponCodeCreate);
+            o.isInUpon = false;
         }
 
-        public void clearUpon(byte type)
+        public static void clearUpon(byte type, GameWorldObject o)
         {
             o.uponStatements.Remove(type);
         }
@@ -1288,7 +1279,7 @@ namespace DPScript
 
         #region attack stuffs
 
-        public void attackDamage(scriptCommand com)
+        public static void attackDamage(scriptCommand com, GameWorldObject o)
         {
             switch(com.byteArgs[0])
             {
@@ -1299,7 +1290,7 @@ namespace DPScript
                     o.damage = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.damage = o.returnInt;
                     break;
                 case 3:
@@ -1311,7 +1302,7 @@ namespace DPScript
             }
         }
 
-        public void attackPushbackX(scriptCommand com)
+        public static void attackPushbackX(scriptCommand com, GameWorldObject o)
         {
             switch (com.byteArgs[0])
             {
@@ -1322,7 +1313,7 @@ namespace DPScript
                     o.pushBackX = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.pushBackX = o.returnInt;
                     break;
                 case 3:
@@ -1334,7 +1325,7 @@ namespace DPScript
             }
         }
 
-        public void attackPushbackY(scriptCommand com)
+        public static void attackPushbackY(scriptCommand com, GameWorldObject o)
         {
             switch (com.byteArgs[0])
             {
@@ -1345,7 +1336,7 @@ namespace DPScript
                     o.pushBackY = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.pushBackY = o.returnInt;
                     break;
                 case 3:
@@ -1357,7 +1348,7 @@ namespace DPScript
             }
         }
 
-        public void attackPushbackZ(scriptCommand com)
+        public static void attackPushbackZ(scriptCommand com, GameWorldObject o)
         {
             switch (com.byteArgs[0])
             {
@@ -1368,7 +1359,7 @@ namespace DPScript
                     o.pushBackZ = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.pushBackZ = o.returnInt;
                     break;
                 case 3:
@@ -1380,12 +1371,12 @@ namespace DPScript
             }
         }
 
-        public void attackLaunchOpponent(bool b)
+        public static void attackLaunchOpponent(bool b, GameWorldObject o)
         {
             o.launchOpponent = b;
         }
 
-        public void attackHitFriction(scriptCommand com)
+        public static void attackHitFriction(scriptCommand com, GameWorldObject o)
         {
             switch (com.byteArgs[0])
             {
@@ -1396,7 +1387,7 @@ namespace DPScript
                     o.friction = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.friction = o.returnInt;
                     break;
                 case 3:
@@ -1408,7 +1399,7 @@ namespace DPScript
             }
         }
 
-        public void attackHitGravity(scriptCommand com)
+        public static void attackHitGravity(scriptCommand com, GameWorldObject o)
         {
             switch (com.byteArgs[0])
             {
@@ -1419,7 +1410,7 @@ namespace DPScript
                     o.hitGravity = o.tempVariables[com.intArgs[0]];
                     break;
                 case 2:
-                    objSwitchCase(com.commands[0]);
+                    objSwitchCase(com.commands[0], o);
                     o.hitGravity = o.returnInt;
                     break;
                 case 3:
@@ -1431,41 +1422,41 @@ namespace DPScript
             }
         }
 
-        public void attackHitAnim(byte type, byte anim)
+        public static void attackHitAnim(byte type, byte anim, GameWorldObject o)
         {
             if (type > o.hitAnims.Length)
                 return;
             o.hitAnims[type] = anim;
         }
 
-        public void attackHitstun(int amount)
+        public static void attackHitstun(int amount, GameWorldObject o)
         {
             o.attackHitstun = amount;
         }
 
-        public void attackHitstop(int amount)
+        public static void attackHitstop(int amount, GameWorldObject o)
         {
             o.hitstop = amount;
         }
 
-        public void attackBlockMultiplier(float amount)
+        public static void attackBlockMultiplier(float amount, GameWorldObject o)
         {
             o.blockMultiplier = amount;
         }
 
-        public void attackUntechTime(byte type, uint amount)
+        public static void attackUntechTime(byte type, uint amount, GameWorldObject o)
         {
             if (type > 1)
                 type = 1;
             o.untechTime[type] = amount;
         }
 
-        public void attackHardKnockdown(uint time)
+        public static void attackHardKnockdown(uint time, GameWorldObject o)
         {
             o.hardKnockdown = time;
         }
 
-        public void attackHitEffect(byte type, string effect, Vector3 offset, uint time)
+        public static void attackHitEffect(byte type, string effect, Vector3 offset, uint time, GameWorldObject o)
         {
             o.hitEff_type = type;
             o.hitEff_str = effect;
@@ -1473,18 +1464,18 @@ namespace DPScript
             o.hitEff_time = time;
         }
 
-        public void attackCounterType(byte type)
+        public static void attackCounterType(byte type, GameWorldObject o)
         {
             o.counterType = type;
         }
 
-        public void attackChipDamageMultiplier(float amount)
+        public static void attackChipDamageMultiplier(float amount, GameWorldObject o)
         {
             o.chipMultiplier = amount;
         }
 
-        public void attackUnblockableType(byte mid, byte crouch, byte air, 
-            byte grab, byte projectile, byte arg6)
+        public static void attackUnblockableType(byte mid, byte crouch, byte air, 
+            byte grab, byte projectile, byte arg6, GameWorldObject o)
         {
             o.hitTypes[0] = mid;
             o.hitTypes[1] = crouch;
@@ -1494,7 +1485,7 @@ namespace DPScript
             o.hitTypes[5] = arg6;
         }
 
-        public void attackRefreshHit()
+        public static void attackRefreshHit(GameWorldObject o)
         {
             o.hitboxesDisabled = false;
         }

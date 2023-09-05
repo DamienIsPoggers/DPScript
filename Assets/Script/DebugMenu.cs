@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using ImGuiNET;
 using DPScript;
 using System.Text;
 using DPScript.Loading;
 
 public class DebugMenu : MonoBehaviour
 {
+    /*
     DebugShit inputStuff;
     bool show = false;
 
@@ -202,4 +202,5 @@ public class DebugMenu : MonoBehaviour
             ImGui.Text((int)(Time.deltaTime * 1000) + "ms");
         }
     }
+    */
 }

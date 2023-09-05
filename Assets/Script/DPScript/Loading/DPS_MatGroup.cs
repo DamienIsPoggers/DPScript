@@ -8,6 +8,6 @@ namespace DPScript.Loading
     public class DPS_MatGroup : ScriptableObject
     {
         public List<DPS_ObjectMat> materials;
-        public bool locked = false;
+        public List<Material> spriteMaterials;
     }
 }

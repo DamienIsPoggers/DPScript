@@ -2,24 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
-using ImGuiNET;
 using System.Drawing;
 using Steamworks;
 using UnityEngine.UI;
 
 public class HitboxOverlay : MonoBehaviour
 {
-
-    void OnEnable()
-    {
-        ImGuiUn.Layout += Draw;
-    }
-
-    void OnDisable()
-    {
-        ImGuiUn.Layout -= Draw;
-    }
-
+    /*
     void Draw()
     {
         if (!Battle_Manager.Instance.showHitboxes)
@@ -54,4 +43,5 @@ public class HitboxOverlay : MonoBehaviour
             }
         }
     }
+    */
 }

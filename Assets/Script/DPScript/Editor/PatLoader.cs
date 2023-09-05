@@ -81,7 +81,7 @@ namespace DPScript.Editor
                 child.transform.localEulerAngles = new Vector3(obj.rotX * 360, obj.rotY * 360, obj.rotZ * 360);
                 child.transform.localScale = new Vector3(obj.scaleX, obj.scaleY);
                 Mesh mesh = new Mesh();
-                List<Vector3> verts = new List<Vector3>(), normals = new List<Vector3>();
+                List<Vector3> verts = new List<Vector3>();
                 List<Vector2> uv = new List<Vector2>();
                 int[] tris = new int[] { 0 };
                 float width = 256f, height = 256f;
@@ -107,8 +107,7 @@ namespace DPScript.Editor
                             verts.Add(new Vector3(-(float)(eff.centerX / 250) + (float)eff.sizeX / 250 * tX[j],
                                 -(float)(eff.centerY / 250) + (float)eff.sizeY / 250 * tY[j], 0));
 
-                            uv.Add(new Vector2((eff.uvX + eff.uvW * tX[j]) / width / 49f, (eff.uvY + eff.uvH * tY[j]) / height / 49f));
-                            normals.Add(Vector3.one);
+                            uv.Add(new Vector2((eff.uvX + eff.uvW * tX[j]) / width / 50f, (eff.uvY + eff.uvH * tY[j]) / height / 50f));
                         }
                         tris = new int[] { 0, 1, 2, 4, 5, 3 };
                         break;
@@ -121,11 +120,8 @@ namespace DPScript.Editor
                 mesh.SetVertices(verts);
                 mesh.SetUVs(0, uv);
                 mesh.SetTriangles(tris, 0);
-                mesh.SetNormals(normals);
-                mesh.RecalculateNormals();
                 child.AddComponent<MeshRenderer>();
                 child.GetComponent<MeshRenderer>().rendererPriority = obj.priority;
-                child.GetComponent<MeshRenderer>().material = mat;
                 child.AddComponent<MeshFilter>();
                 child.GetComponent<MeshFilter>().mesh = mesh;
             }
@@ -168,7 +164,9 @@ namespace DPScript.Editor
                         file.Close();
                         return;
                     case "_STR":
+                        break;
                     case "_END":
+                        file.BaseStream.Position -= 4;
                         break;
                     case "P_ST":
                         loadSprite(file);
@@ -181,6 +179,7 @@ namespace DPScript.Editor
                         break;
                     case "PGST":
                         loadPage(file);
+                        file.ReadBytes(4);
                         break;
                 }
             }
@@ -406,9 +405,10 @@ namespace DPScript.Editor
             pg.width = file.ReadUInt32();
             pg.height = file.ReadUInt32();
             pg.encoding = (patImageHeader.imageType)file.ReadUInt32();
+            Debug.Log(pg.encoding.ToString());
             pg.DDPF_FOURCC = file.ReadBytes(8);
             file.ReadBytes(8);
-            pg.fileSize = file.ReadUInt32();
+            pg.fileSize = file.ReadUInt32(); 
             pg.aspectRatio = file.ReadUInt32();
 
             file.BaseStream.Position += pg.fileSize;

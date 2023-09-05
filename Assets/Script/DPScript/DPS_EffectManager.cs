@@ -7,10 +7,8 @@ namespace DPScript
     public class DPS_EffectManager : MonoBehaviour
     {
         Dictionary<string, GameObject> effects = new Dictionary<string, GameObject>();
-        [SerializeField]
-        List<GameObject> effectList = new List<GameObject>();
-        [SerializeField]
-        List<string> effectNames = new List<string>();
+        public List<GameObject> effectList = new List<GameObject>();
+        public List<string> effectNames = new List<string>();
         public GameObject effectSpawner;
 
         public List<GameObject> effectsSpawned = new List<GameObject>();

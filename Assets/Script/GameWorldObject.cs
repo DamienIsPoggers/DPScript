@@ -19,18 +19,15 @@ public class GameWorldObject : MonoBehaviour
 
     public byte playerNum;
     public string idStr;
-
-    DPS_ObjectCommand commands;
-    [SerializeField]
-    DPS_AudioManager audioManager;
-    [SerializeField]
-    DPS_EffectManager effectManager;
+    public DPS_AudioManager audioManager;
+    public DPS_EffectManager effectManager;
     Transform cameraMain;
     [SerializeField]
     Transform meshParent;
 
     [SerializeField]
     GameObject CollisionChild;
+    public SpriteRenderer spriteChild;
 
     public Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
     public GameWorldObject player, opponent, attacker, attacking;
@@ -135,6 +132,10 @@ public class GameWorldObject : MonoBehaviour
 
     public int isInIf = 0;
     public int requestedLabel = -1;
+    public bool isInUpon = false;
+    public uponEntry uponCodeCreate;
+    public bool ifFailed = false, canElse = false;
+    public StateEntry entryAdd;
 
 
     [SerializeField]
@@ -160,7 +161,6 @@ public class GameWorldObject : MonoBehaviour
 
     private void Awake()
     {
-        commands = gameObject.GetComponent<DPS_ObjectCommand>();
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
         playerControls = new PlayerControls();
@@ -180,7 +180,7 @@ public class GameWorldObject : MonoBehaviour
     }
 
     private void Start()
-    { 
+    {
         //Application.targetFrameRate = 60;
 
         if (!isPlayer)
@@ -188,7 +188,7 @@ public class GameWorldObject : MonoBehaviour
 
         for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
             world.Add(Battle_Manager.Instance.stages[i].id, Battle_Manager.Instance.stages[i]);
-        Battle_Manager.Instance.players.Add(this);
+        Battle_Manager.Instance.players.Add(this); 
     }
 
     private void OnEnable()
@@ -210,13 +210,13 @@ public class GameWorldObject : MonoBehaviour
         {
             if(!isPlayer)
             {
-                commands.enterState(objectStartState);
+                DPS_ObjectCommand.enterState(objectStartState, this);
                 initalized = true;
                 return;
             }
             player = this;
             for(int i = 0; i < Battle_Manager.Instance.players.Count; i++)
-                if (Battle_Manager.Instance.players[i] != this)
+                if (Battle_Manager.Instance.players[i] != this) 
                 {
                     opponent = Battle_Manager.Instance.players[i];
                     worldObjects.Add(3, opponent);
@@ -225,9 +225,9 @@ public class GameWorldObject : MonoBehaviour
             if (opponent == null)
                 return;
             addGlobalVariables();
-            commands.callSubroutine("init");
-            commands.cmnSubroutine("cmnInit");
-            commands.enterState(objectStartState);
+            DPS_ObjectCommand.callSubroutine("init", this);
+            DPS_ObjectCommand.cmnSubroutine("cmnInit", this);
+            DPS_ObjectCommand.enterState(objectStartState, this);
             initalized = true;
             return;
         }
@@ -319,14 +319,18 @@ public class GameWorldObject : MonoBehaviour
         {
             switchingState = false;
             if (scriptPos + 1 > states[curState].commands.Count)
-            { commands.enterState(nextState); continue; }
-            commands.objSwitchCase(states[curState].commands[scriptPos]);
+            { DPS_ObjectCommand.enterState(nextState, this); continue; }
+
+            DPS_ObjectCommand.objSwitchCase(states[curState].commands[scriptPos], this);
             if (requestedLabel >= 0 && isInIf == 0)
-                commands.sendToLabel((uint)requestedLabel);
+                DPS_ObjectCommand.sendToLabel((uint)requestedLabel, this);
+
             if (switchingState)
                 continue;
+
             if (!rest || states[curState].commands[scriptPos].id == 3)
                 scriptPos++;
+
             if (scriptPos + 1 > states[curState].commands.Count)
                 break;
         }
@@ -487,7 +491,7 @@ public class GameWorldObject : MonoBehaviour
             yImpulseAdd = 0;
             triggerUpon(2);
             if(landToState)
-                commands.enterState(landingState);
+                DPS_ObjectCommand.enterState(landingState, this);
         }
 
         globalVariables[14] = locX;
@@ -516,15 +520,15 @@ public class GameWorldObject : MonoBehaviour
         if (uponStatements.ContainsKey(type))
             for (int i = 0; i < uponStatements[type].commands.Count; i++)
             {
-                if (uponStatements[type].commands[i].id == 33 && uponStatements[type].commands[i].byteArgs[0] == type)
+                if (uponStatements[type].commands[i].id == (int)DPS_CommandEnum.ID_clearUpon && uponStatements[type].commands[i].byteArgs[0] == type)
                     willDestroy = true;
-                else if (uponStatements[type].commands[i].id == 32)
+                else if (uponStatements[type].commands[i].id == (int)DPS_CommandEnum.ID_triggerUpon)
                     newUpon = uponStatements[type].commands[i].byteArgs[0];
                 else
-                    commands.objSwitchCase(uponStatements[type].commands[i]);
+                    DPS_ObjectCommand.objSwitchCase(uponStatements[type].commands[i], this);
             }
         if (willDestroy)
-            commands.clearUpon(type);
+            DPS_ObjectCommand.clearUpon(type, this);
         if (newUpon != null)
             triggerUpon((byte)newUpon);
     }
@@ -590,7 +594,7 @@ public class GameWorldObject : MonoBehaviour
             hitstopTick = attacker.hitstop;
             if (armourTypes[stateType] <= attacker.hitTypes[stateType])
             {
-                commands.enterState(hitstunAnims[attacker.hitAnims[stateType]]);
+                DPS_ObjectCommand.enterState(hitstunAnims[attacker.hitAnims[stateType]], this);
                 curHealth -= attacker.damage; 
                 xImpulse = attacker.pushBackX;
                 xImpulseAdd = attacker.friction;
@@ -675,7 +679,7 @@ public class GameWorldObject : MonoBehaviour
                     if (!stateCheckSubroutine(entry.subroutine, entry.subroutineType))
                         continue;
                 //Debug.Log("boom");
-                commands.enterState(entry.name);
+                DPS_ObjectCommand.enterState(entry.name, this);
                 break;
             }
         }
@@ -683,11 +687,11 @@ public class GameWorldObject : MonoBehaviour
 
     private bool stateCheckSubroutine(string subroutine, byte type)
     {
-        commands.createVar(1, 4, 0);
+        DPS_ObjectCommand.createVar(1, 4, 0, this);
         if (type == 0)
-            commands.cmnSubroutine(subroutine);
+            DPS_ObjectCommand.cmnSubroutine(subroutine, this);
         else
-            commands.callSubroutine(subroutine);
+            DPS_ObjectCommand.callSubroutine(subroutine, this);
         return Convert.ToBoolean(tempVariables[4]);
     }
 
@@ -922,30 +926,30 @@ public class GameWorldObject : MonoBehaviour
 
     private void addGlobalVariables()
     {
-        commands.createVar(0, 0, maxHealth);
-        commands.createVar(0, 1, curHealth);
-        commands.createVar(0, 2, walkingSpeed[0]);
-        commands.createVar(0, 3, walkingSpeed[1]);
-        commands.createVar(0, 4, dashSpeed[0]);
-        commands.createVar(0, 5, dashSpeed[1]);
-        commands.createVar(0, 6, dashSpeed[2]);
-        commands.createVar(0, 7, airActionsCount[0]);
-        commands.createVar(0, 8, airActionsCount[1]);
-        commands.createVar(0, 9, airActionsCount[2]);
-        commands.createVar(0, 10, jumpSpeed[0]);
-        commands.createVar(0, 11, jumpSpeed[1]);
-        commands.createVar(0, 12, jumpSpeed[2]);
-        commands.createVar(0, 13, defaultGravity);
-        commands.createVar(0, 14, locX);
-        commands.createVar(0, 15, locY);
-        commands.createVar(0, 16, locZ);
-        commands.createVar(0, 18, hitstun);
-        commands.createVar(0, 19, (int)untechTime[0]);
-        commands.createVar(0, 20, (int)untechTime[1]);
-        commands.createVar(0, 21, HKDtimer);
-        commands.createVar(0, 22, xImpulse);
-        commands.createVar(0, 23, yImpulse);
-        commands.createVar(0, 24, zImpulse);
+        DPS_ObjectCommand.createVar(0, 0, maxHealth, this);
+        DPS_ObjectCommand.createVar(0, 1, curHealth, this);
+        DPS_ObjectCommand.createVar(0, 2, walkingSpeed[0], this);
+        DPS_ObjectCommand.createVar(0, 3, walkingSpeed[1], this);
+        DPS_ObjectCommand.createVar(0, 4, dashSpeed[0], this);
+        DPS_ObjectCommand.createVar(0, 5, dashSpeed[1], this);
+        DPS_ObjectCommand.createVar(0, 6, dashSpeed[2], this);
+        DPS_ObjectCommand.createVar(0, 7, airActionsCount[0], this);
+        DPS_ObjectCommand.createVar(0, 8, airActionsCount[1], this);
+        DPS_ObjectCommand.createVar(0, 9, airActionsCount[2], this);
+        DPS_ObjectCommand.createVar(0, 10, jumpSpeed[0], this);
+        DPS_ObjectCommand.createVar(0, 11, jumpSpeed[1], this);
+        DPS_ObjectCommand.createVar(0, 12, jumpSpeed[2], this);
+        DPS_ObjectCommand.createVar(0, 13, defaultGravity, this);
+        DPS_ObjectCommand.createVar(0, 14, locX, this);
+        DPS_ObjectCommand.createVar(0, 15, locY, this);
+        DPS_ObjectCommand.createVar(0, 16, locZ, this);
+        DPS_ObjectCommand.createVar(0, 18, hitstun, this);
+        DPS_ObjectCommand.createVar(0, 19, (int)untechTime[0], this);
+        DPS_ObjectCommand.createVar(0, 20, (int)untechTime[1], this);
+        DPS_ObjectCommand.createVar(0, 21, HKDtimer, this);
+        DPS_ObjectCommand.createVar(0, 22, xImpulse, this);
+        DPS_ObjectCommand.createVar(0, 23, yImpulse, this);
+        DPS_ObjectCommand.createVar(0, 24, zImpulse, this);
     }
 
     private void kill()

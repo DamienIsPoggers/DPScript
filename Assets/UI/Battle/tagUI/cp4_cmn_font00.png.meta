@@ -147,7 +147,7 @@ TextureImporter:
       213: -2364482397765495069
     second: cp4_cmn_font00_47
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -164,10 +164,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -206,6 +208,8 @@ TextureImporter:
   textureFormatSet: 0
   ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -217,6 +221,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -229,6 +234,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -241,6 +247,46 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: iPhone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Windows Store Apps
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -1264,9 +1310,57 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      cp4_cmn_font00_0: -6320168062018228104
+      cp4_cmn_font00_1: -7608222320629529353
+      cp4_cmn_font00_10: 8657413583508980851
+      cp4_cmn_font00_11: -6953921437959849922
+      cp4_cmn_font00_12: 8293484780432160168
+      cp4_cmn_font00_13: 5570260816246883012
+      cp4_cmn_font00_14: -4407828328926839972
+      cp4_cmn_font00_15: 1747209093565995768
+      cp4_cmn_font00_16: 954888500539550296
+      cp4_cmn_font00_17: 5366180500068216710
+      cp4_cmn_font00_18: 5159284939440982779
+      cp4_cmn_font00_19: 2674951772163620439
+      cp4_cmn_font00_2: 4159117678409601955
+      cp4_cmn_font00_20: 5422829196842410626
+      cp4_cmn_font00_21: -2540197521869148750
+      cp4_cmn_font00_22: 8108145588772235013
+      cp4_cmn_font00_23: -4192446475588029482
+      cp4_cmn_font00_24: -963874520857541931
+      cp4_cmn_font00_25: 6726226938244497918
+      cp4_cmn_font00_26: -2729219340287786567
+      cp4_cmn_font00_27: -248385652237894510
+      cp4_cmn_font00_28: -6719483028900653516
+      cp4_cmn_font00_29: 3664978835850823636
+      cp4_cmn_font00_3: 7129987138461568233
+      cp4_cmn_font00_30: -6016583302991875340
+      cp4_cmn_font00_31: -906405665339170867
+      cp4_cmn_font00_32: -4726577398962473264
+      cp4_cmn_font00_33: 893835055212703838
+      cp4_cmn_font00_34: -3297531121233034021
+      cp4_cmn_font00_35: 6180906744337329532
+      cp4_cmn_font00_36: 5988580723090977048
+      cp4_cmn_font00_37: -1447409341909421171
+      cp4_cmn_font00_38: 5555486393946896537
+      cp4_cmn_font00_39: -330245084880548139
+      cp4_cmn_font00_4: -7051695817444261347
+      cp4_cmn_font00_40: -4924270703731662985
+      cp4_cmn_font00_41: 2357280516777239507
+      cp4_cmn_font00_42: 6743348879713328159
+      cp4_cmn_font00_43: -84982398751792053
+      cp4_cmn_font00_44: -6084031236585424683
+      cp4_cmn_font00_45: 2412474618412475499
+      cp4_cmn_font00_46: -5610552870694022498
+      cp4_cmn_font00_47: -2364482397765495069
+      cp4_cmn_font00_5: 6237233694091110574
+      cp4_cmn_font00_6: 18392845529247527
+      cp4_cmn_font00_7: 6697849507537235974
+      cp4_cmn_font00_8: 6320623288956226536
+      cp4_cmn_font00_9: 2522604499651783863
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
