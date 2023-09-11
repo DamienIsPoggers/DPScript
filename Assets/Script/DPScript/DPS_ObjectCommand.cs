@@ -2,36 +2,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using System.Linq;
-using UnityEditor;
 
 namespace DPScript
 {
     public static class DPS_ObjectCommand
     {
         #region switchCase
-
         public static void objSwitchCase(scriptCommand com, GameWorldObject o)
         {
-            if (o.isInUpon && com.id != 31)
+            if (o.isInUpon && com.id != (int)DPS_CommandEnum.ID_uponEnd)
             {
                 o.uponCodeCreate.commands.Add(com);
                 return;
             }
-            if (o.ifFailed && !o.isInUpon)
-            {
-                if (com.id >= 12 && com.id <= 16)
-                {
-                    o.isInIf++;
+
+            if (o.ifFailed > 0)
+                if (!isIfCommand(com.id))
                     return;
-                }
-                else if(com.id == 17)
-                {
-                    o.isInIf--;
-                    if (o.isInIf! > 0)
-                        return;
-                }
-            }
+
+            if (o.canElse && (com.id != (int)DPS_CommandEnum.ID_else || com.id != (int)DPS_CommandEnum.ID_elseIf ||
+                com.id != (int)DPS_CommandEnum.ID_elseIfNot))
+                o.canElse = false;
 
             switch((DPS_CommandEnum)com.id)
             {
@@ -66,25 +57,16 @@ namespace DPScript
                     ifCom(com, o);
                     break;
                 case DPS_CommandEnum.ID_else:
-                    if (o.canElse)
-                        elseCom(o);
-                    else
-                        o.ifFailed = true;
+                    elseCom(o);
                     break;
                 case DPS_CommandEnum.ID_elseIf:
-                    if (o.canElse)
-                        elseIf(com, o);
-                    else
-                        o.ifFailed = true;
+                    elseIf(com, o);
                     break;
                 case DPS_CommandEnum.ID_ifNot:
                     ifNot(com, o);
                     break;
                 case DPS_CommandEnum.ID_elseIfNot:
-                    if (o.canElse)
-                        elseIfNot(com, o);
-                    else
-                        o.ifFailed = true;
+                    elseIfNot(com, o);
                     break;
                 case DPS_CommandEnum.ID_endIf:
                     endIf(o);
@@ -157,6 +139,9 @@ namespace DPScript
                     break;
                 case DPS_CommandEnum.ID_doMath:
                     o.returnInt = doMath(com, o);
+                    break;
+                case DPS_CommandEnum.ID_stateMaxComboUse:
+                    stateMaxComboUse(com.uintArgs[0], o);
                     break;
                 case DPS_CommandEnum.ID_stateRegister:
                     stateRegister(com.stringArgs[0], o);
@@ -252,6 +237,15 @@ namespace DPScript
                 case DPS_CommandEnum.ID_setSpriteIfNot:
                     setSpriteIfNot(com.stringArgs[0], com.uintArgs[0], com.byteArgs[0], com.intArgs[0], o);
                     break;
+                case DPS_CommandEnum.ID_setSpriteMaterial:
+                    setSpriteMaterial(com.intArgs[0], o);
+                    break;
+                case DPS_CommandEnum.ID_setSpriteOffset:
+                    setSpriteOffset(new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]), o);
+                    break;
+                case DPS_CommandEnum.ID_setMeshOffset:
+                    setMeshOffset(new Vector3(com.floatArgs[0], com.floatArgs[1], com.floatArgs[2]), o);
+                    break;
                 case DPS_CommandEnum.ID_attackDamage:
                     attackDamage(com, o);
                     break;
@@ -313,6 +307,11 @@ namespace DPScript
                     break;
                 case DPS_CommandEnum.ID_addToComboCounterOnHit:
                     addComboCounterOnHit(com.intArgs[0], o);
+                    break;
+
+
+                case DPS_CommandEnum.ID_log_String:
+                    Debug.Log(com.stringArgs[0]);
                     break;
             }
         }
@@ -379,15 +378,15 @@ namespace DPScript
             {
                 bool labelFound = false;
                 for(int i = o.scriptPos + 1; i < o.states[o.curState].commands.Count; i++)
-                    if(o.states[o.curState].commands[i].id == 4 && o.states[o.curState].commands[i].uintArgs[0] == pos)
+                    if(o.states[o.curState].commands[i].id == (int)DPS_CommandEnum.ID_label && o.states[o.curState].commands[i].uintArgs[0] == pos)
                     {
-                        label(o.states[o.curState].commands[i].uintArgs[0], o);
+                        label(o.states[o.curState].commands[i].uintArgs[0], i, o);
                         labelFound = true;
                         break;
                     }
                 if (!labelFound)
                 {
-                    Debug.LogError("Label " + pos + " not found, skipping");
+                    Debug.Log("Label " + pos + " not found, skipping");
                     return;
                 }
             }
@@ -439,7 +438,10 @@ namespace DPScript
             o.curState = state;
 
             if (o.commonSubroutines.ContainsKey(state))
+            {
                 cmnSubroutine(state, o);
+                o.comboUsesCount.Clear();
+            }
         }
 
         static void createObject(string state, int offsetX, int offsetY, GameWorldObject o)
@@ -705,13 +707,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locX += amount;
+                    o.locX += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locX += o.tempVariables[amount];
+                    o.locX += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locX += o.globalVariables[amount];
+                    o.locX += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
@@ -721,13 +723,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locY += amount;
+                    o.locY += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locY += o.tempVariables[amount];
+                    o.locY += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locY += o.globalVariables[amount];
+                    o.locY += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
@@ -737,13 +739,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locZ += amount;
+                    o.locZ += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locZ += o.tempVariables[amount];
+                    o.locZ += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locZ += o.globalVariables[amount];
+                    o.locZ += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
@@ -967,7 +969,7 @@ namespace DPScript
                 set = o.globalVariables[var] > 0;
             else
                 set = o.tempVariables[var] > 0;
-
+            
             if (set)
             {
                 o.willRest = false;
@@ -990,6 +992,21 @@ namespace DPScript
             }
         }
 
+        public static void setSpriteMaterial(int id, GameWorldObject o)
+        {
+            o.spriteChild.material = o.spriteMaterials[id];
+        }
+
+        public static void setSpriteOffset(Vector3 off, GameWorldObject o)
+        {
+            o.spriteChild.transform.position = off;
+        }
+
+        public static void setMeshOffset(Vector3 off, GameWorldObject o)
+        {
+            o.meshParent.position = off;
+        }
+
         public static void addComboCounter(int i, GameWorldObject o)
         {
             o.comboCounter += i;
@@ -1006,187 +1023,170 @@ namespace DPScript
 
         static void ifCom(scriptCommand com, GameWorldObject o)
         {
-            bool callCom = false;
-            if (com.byteArgs[0] == 2)
-                callCom = true;
+            o.isInIf++;
+
+            if(o.ifFailed > 0)
+            {
+                o.ifFailed++;
+                return;
+            }
 
             int checkNum = 0;
 
-            if(callCom)
+            switch (com.byteArgs[0])
             {
-                objSwitchCase(com.commands[0], o);
-                checkNum = o.returnInt;
-            }
-            else
-            {
-                switch(com.byteArgs[0])
-                {
-                    case 0:
-                        checkNum = o.globalVariables[com.intArgs[0]];
-                        break;
-                    case 1:
-                        checkNum = o.tempVariables[com.intArgs[0]];
-                        break;
-                }
+                case 0:
+                    checkNum = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    checkNum = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0], o);
+                    checkNum = o.returnInt;
+                    break;
             }
 
-            if (checkNum <= 0)
+            bool check = checkNum > 0;
+
+            if (!check)
             {
-                o.ifFailed = true;
+                o.ifFailed++;
                 o.canElse = true;
-            }
-            else
-            {
-                o.ifFailed = false;
-                o.canElse = false;
-                o.isInIf++;
             }
         }
 
         static void elseCom(GameWorldObject o)
         {
-            if (!o.canElse && o.ifFailed)
+            o.isInIf++;
+            if (!o.canElse || o.ifFailed > 0)
+            {
+                o.ifFailed++;
                 return;
+            }
 
             o.canElse = false;
-            o.isInIf++;
         }
 
         static void elseIf(scriptCommand com, GameWorldObject o)
         {
-            if (!o.canElse && o.ifFailed)
+            o.isInIf++;
+            if (!o.canElse || o.ifFailed > 0)
+            {
+                o.ifFailed++;
                 return;
-
-            bool callCom = false;
-            if (com.byteArgs[0] == 2)
-                callCom = true;
+            }
+            o.canElse = false;
 
             int checkNum = 0;
 
-            if (callCom)
+            switch (com.byteArgs[0])
             {
-                objSwitchCase(com.commands[0], o);
-                checkNum = o.returnInt;
-            }
-            else
-            {
-                switch (com.byteArgs[0])
-                {
-                    case 0:
-                        checkNum = o.globalVariables[com.intArgs[0]];
-                        break;
-                    case 1:
-                        checkNum = o.tempVariables[com.intArgs[0]];
-                        break;
-                }
+                case 0:
+                    checkNum = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    checkNum = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0], o);
+                    checkNum = o.returnInt;
+                break;
             }
 
-            if (checkNum <= 0)
+            bool check = checkNum > 0;
+
+            if (!check)
             {
-                o.ifFailed = true;
+                o.ifFailed++;
                 o.canElse = true;
-            }
-            else
-            {
-                o.ifFailed = false;
-                o.canElse = false;
-                o.isInIf++;
             }
         }
 
         static void ifNot(scriptCommand com, GameWorldObject o)
         {
-            bool callCom = false;
-            if (com.byteArgs[0] == 2)
-                callCom = true;
+            o.isInIf++;
+            if(o.ifFailed > 0)
+            {
+                o.ifFailed++;
+                return;
+            }
 
             int checkNum = 0;
 
-            if (callCom)
+            switch (com.byteArgs[0])
             {
-                //Debug.Log(com.commands[0].id);
-                //Debug.Log(com.commands[0].intArgs.Count);
-                //Debug.Log(com.commands.Count);
-                objSwitchCase(com.commands[0], o);
-                checkNum = o.returnInt;
-            }
-            else
-            {
-                switch (com.byteArgs[0])
-                {
-                    case 0:
-                        checkNum = o.globalVariables[com.intArgs[0]];
-                        break;
-                    case 1:
-                        checkNum = o.tempVariables[com.intArgs[0]];
-                        break;
-                }
+                case 0:
+                    checkNum = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    checkNum = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0], o);
+                    checkNum = o.returnInt;
+                    break;
             }
 
-            if (checkNum > 0)
+            bool check = checkNum <= 0;
+
+            if (!check)
             {
-                o.ifFailed = true;
+                o.ifFailed++;
                 o.canElse = true;
             }
-            else
-            {
-                o.ifFailed = false;
-                o.canElse = false;
-                o.isInIf++;
-            }    
         }
 
         static void elseIfNot(scriptCommand com, GameWorldObject o)
         {
-            if (!o.canElse && o.ifFailed)
+            o.isInIf++;
+            if (!o.canElse || o.ifFailed > 0)
+            {
+                o.ifFailed++;
                 return;
-
-            bool callCom = false;
-            if (com.byteArgs[0] == 2)
-                callCom = true;
+            }
+            o.canElse = false;
 
             int checkNum = 0;
 
-            if (callCom)
+            switch (com.byteArgs[0])
             {
-                objSwitchCase(com.commands[0], o);
-                checkNum = o.returnInt;
-            }
-            else
-            {
-                switch (com.byteArgs[0])
-                {
-                    case 0:
-                        checkNum = o.globalVariables[com.intArgs[0]];
-                        break;
-                    case 1:
-                        checkNum = o.tempVariables[com.intArgs[0]];
-                        break;
-                }
+                case 0:
+                    checkNum = o.globalVariables[com.intArgs[0]];
+                    break;
+                case 1:
+                    checkNum = o.tempVariables[com.intArgs[0]];
+                    break;
+                case 2:
+                    objSwitchCase(com.commands[0], o);
+                    checkNum = o.returnInt;
+                    break;
             }
 
-            if (checkNum > 0)
+            bool check = checkNum <= 0;
+
+            if (!check)
             {
-                o.ifFailed = true;
+                o.ifFailed++;
                 o.canElse = true;
-            }
-            else
-            {
-                o.ifFailed = false;
-                o.canElse = false;
-                o.isInIf++;
             }
         }
 
         static void endIf(GameWorldObject o)
         {
-            o.ifFailed = false;
+            if(o.ifFailed > 0)
+                o.ifFailed--;
             o.isInIf--;
         }
 
         #endregion
 
         #region stateRegister
+
+        public static void stateMaxComboUse(uint count, GameWorldObject o)
+        {
+            o.entryAdd.maxComboUse = count;
+        }
 
         public static void stateRegister(string name, GameWorldObject o)
         {
@@ -1491,5 +1491,21 @@ namespace DPScript
         }
 
         #endregion
+
+        static bool isIfCommand(int id)
+        {
+            switch((DPS_CommandEnum)id)
+            {
+                default:
+                    return false;
+                case DPS_CommandEnum.ID_if:
+                case DPS_CommandEnum.ID_else:
+                case DPS_CommandEnum.ID_elseIf:
+                case DPS_CommandEnum.ID_ifNot:
+                case DPS_CommandEnum.ID_elseIfNot:
+                case DPS_CommandEnum.ID_endIf:
+                    return true;
+            }
+        }
     }
 }

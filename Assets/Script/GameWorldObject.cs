@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using DPScript;
 using System;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 public class GameWorldObject : MonoBehaviour
 {
@@ -22,11 +21,12 @@ public class GameWorldObject : MonoBehaviour
     public DPS_AudioManager audioManager;
     public DPS_EffectManager effectManager;
     Transform cameraMain;
-    [SerializeField]
-    Transform meshParent;
+    public Transform meshParent;
 
     [SerializeField]
     GameObject CollisionChild;
+    [SerializeField]
+    PlayerInput inputs;
     public SpriteRenderer spriteChild;
 
     public Dictionary<int, GameWorldObject> worldObjects = new Dictionary<int, GameWorldObject>();
@@ -90,12 +90,13 @@ public class GameWorldObject : MonoBehaviour
 
     public Dictionary<byte, string> hitstunAnims = new Dictionary<byte, string>();
 
-    public PlayerControls playerControls;
-
     [SerializeField]
     private InputElement currInput = new InputElement(5);
     [SerializeField]
     private List<InputElement> buffer = new List<InputElement>();
+    public Dictionary<string, uint> comboUsesCount = new Dictionary<string, uint>();
+
+    public List<Material> spriteMaterials = new List<Material>();
 
     //some various variables for misc stuff
     public int[] walkingSpeed = new int[] { 4000, -3000 }; //fwalk, bwalk
@@ -130,11 +131,11 @@ public class GameWorldObject : MonoBehaviour
 
     public bool comboIsValid = true, isInCombo = false;
 
-    public int isInIf = 0;
+    public int isInIf = 0, ifFailed = 0;
     public int requestedLabel = -1;
     public bool isInUpon = false;
     public uponEntry uponCodeCreate;
-    public bool ifFailed = false, canElse = false;
+    public bool canElse = false;
     public StateEntry entryAdd;
 
 
@@ -142,6 +143,12 @@ public class GameWorldObject : MonoBehaviour
     bool isInDebug = false;
     [SerializeField]
     bool debugNoLoad = false;
+    [SerializeField]
+    [Tooltip("Will log the data in the variable")]
+    int logVar = -1;
+    [SerializeField]
+    [Tooltip("Will log if this upon currently exists")]
+    int logHasUpon = -1;
 
     public bool initalized = false;
     public bool ignoreInputs = false;
@@ -163,7 +170,6 @@ public class GameWorldObject : MonoBehaviour
     {
         cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
         //GameObject temp = transform.Find("Meshes").gameObject;
-        playerControls = new PlayerControls();
 
         for (int i = 0; i < armatureList.Count; i++)
         {
@@ -193,12 +199,12 @@ public class GameWorldObject : MonoBehaviour
 
     private void OnEnable()
     {
-        playerControls.Enable();
+        
     }
 
     private void OnDisable()
     {
-        playerControls.Disable();
+        
     }
 
     private void FixedUpdate()
@@ -206,6 +212,13 @@ public class GameWorldObject : MonoBehaviour
         //if (!ignoreFreezes && battleManager.superFreeze && superFreezeTime <= 0)
         //  return;
         //input_DebugBuffer();
+#if UNITY_EDITOR
+        if (logVar > -1 && globalVariables.ContainsKey(logVar))
+            Debug.Log(globalVariables[logVar]);
+        if (logHasUpon > -1)
+            Debug.Log("Upon " + logHasUpon + " exists: " + uponStatements.ContainsKey((byte)logHasUpon));
+#endif
+
         if(!initalized)
         {
             if(!isPlayer)
@@ -322,7 +335,7 @@ public class GameWorldObject : MonoBehaviour
             { DPS_ObjectCommand.enterState(nextState, this); continue; }
 
             DPS_ObjectCommand.objSwitchCase(states[curState].commands[scriptPos], this);
-            if (requestedLabel >= 0 && isInIf == 0)
+            if (requestedLabel >= 0 && isInIf <= 0)
                 DPS_ObjectCommand.sendToLabel((uint)requestedLabel, this);
 
             if (switchingState)
@@ -344,9 +357,8 @@ public class GameWorldObject : MonoBehaviour
         if (!playingAnim)
             switchSprite();
 
-        if (collisions.ContainsKey(lastCollision))
-            for (int i = 0; i < collisions[lastCollision].boxCount; i++)
-                loadedCollisions[0].kill();
+        while (loadedCollisions.Count > 0)
+            loadedCollisions[0].kill();
 
         if (collisions.ContainsKey(curCollision))
         {
@@ -472,9 +484,22 @@ public class GameWorldObject : MonoBehaviour
             else
                 locX += xImpulse * dir;
             */
-                locX += xImpulse * (int)dir;
+            locX += xImpulse * (int)dir;
             locY += yImpulse; locZ += zImpulse;
             xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
+            if(hasWallCollision)
+                if(Mathf.Abs(locX) > Battle_Manager.Instance.stateWidth)
+                {
+                    int side = (int)Mathf.Sign(locX);
+                    locX = Battle_Manager.Instance.stateWidth * side;
+                }
+            /*
+                else if(Mathf.Abs(distance) > CameraManager.Instance.maxNormalZoom)
+                {
+                    int side = (int)Mathf.Sign(locX);
+                    locX = (locX - distance) * side;
+                }
+            */
         }
 
         if(hitstun > 0)
@@ -520,7 +545,8 @@ public class GameWorldObject : MonoBehaviour
         if (uponStatements.ContainsKey(type))
             for (int i = 0; i < uponStatements[type].commands.Count; i++)
             {
-                if (uponStatements[type].commands[i].id == (int)DPS_CommandEnum.ID_clearUpon && uponStatements[type].commands[i].byteArgs[0] == type)
+                if (uponStatements[type].commands[i].id == (int)DPS_CommandEnum.ID_clearUpon && 
+                    uponStatements[type].commands[i].byteArgs[0] == type && ifFailed <= 0)
                     willDestroy = true;
                 else if (uponStatements[type].commands[i].id == (int)DPS_CommandEnum.ID_triggerUpon)
                     newUpon = uponStatements[type].commands[i].byteArgs[0];
@@ -670,6 +696,10 @@ public class GameWorldObject : MonoBehaviour
             if (!stateCancels.ContainsKey(cancelableStates[i]))
                 continue;
             StateEntry entry = stateCancels[cancelableStates[i]];
+
+            if (comboUsesCount.ContainsKey(cancelableStates[i]))
+                if(entry.maxComboUse <= comboUsesCount[cancelableStates[i]])
+                    continue;
             //Debug.Log("Swag");
             //Debug.Log(entry.input + ", " + entry.button);
             if (input_CanInput(entry.input, entry.button, entry.leniantInput,
@@ -678,6 +708,11 @@ public class GameWorldObject : MonoBehaviour
                 if (entry.useSubroutine)
                     if (!stateCheckSubroutine(entry.subroutine, entry.subroutineType))
                         continue;
+
+                if (!comboUsesCount.ContainsKey(cancelableStates[i]))
+                    comboUsesCount.Add(cancelableStates[i], 1);
+                else
+                    comboUsesCount[cancelableStates[i]]++;
                 //Debug.Log("boom");
                 DPS_ObjectCommand.enterState(entry.name, this);
                 break;
@@ -689,9 +724,9 @@ public class GameWorldObject : MonoBehaviour
     {
         DPS_ObjectCommand.createVar(1, 4, 0, this);
         if (type == 0)
-            DPS_ObjectCommand.cmnSubroutine(subroutine, this);
-        else
             DPS_ObjectCommand.callSubroutine(subroutine, this);
+        else
+            DPS_ObjectCommand.cmnSubroutine(subroutine, this);
         return Convert.ToBoolean(tempVariables[4]);
     }
 
@@ -700,42 +735,7 @@ public class GameWorldObject : MonoBehaviour
         InputElement _input = new InputElement(5);
         if (buffer.Count > 0) _input.inputType = buffer[buffer.Count - 1].inputType;
 
-        Vector2 directions = playerControls.Player.Directions.ReadValue<Vector2>();
-        /*
-        if (Mathf.Abs(directions[0]) >= 0.5 && Mathf.Abs(directions[1]) >= 0.5)
-        {
-            if (directions[0] < 0)
-            {
-                if (directions[1] < 0)
-                { _input.inputType = 1; currInput.inputType = 1; }
-                else
-                { _input.inputType = 3; currInput.inputType = 3; }
-            }
-            else
-            {
-                if (directions[1] < 0)
-                { _input.inputType = 7; currInput.inputType = 7; }
-                else
-                { _input.inputType = 9; currInput.inputType = 9; }
-            }
-        }
-        else if(Mathf.Abs(directions[0]) >= 0.5)
-        {
-            if (directions[0] < 0)
-            { _input.inputType = 2; currInput.inputType = 2; }
-            else
-            { _input.inputType = 8; currInput.inputType = 8; }
-        }
-        else if(Mathf.Abs(directions[1]) >= 0.5)
-        {
-            if (directions[1] < 0)
-            { _input.inputType = 4; currInput.inputType = 4; }
-            else
-            { _input.inputType = 6; currInput.inputType = 6; }
-        }
-        else
-        { _input.inputType = 5; currInput.inputType = 5; }
-        */
+        Vector2 directions = inputs.actions["Directions"].ReadValue<Vector2>();
         if (directions[1] <= -0.5 && directions[0] <= -0.5)
              _input.inputType = 1; 
         else if (directions[1] <= -0.5 && directions[0] >= 0.5)
@@ -757,13 +757,13 @@ public class GameWorldObject : MonoBehaviour
         string _but = "";
 
 
-        if (playerControls.Player.Action_A.IsPressed() && !_but.Contains("A")) _but += "A";
-        if (playerControls.Player.Action_B.IsPressed() && !_but.Contains("B")) _but += "B";
-        if (playerControls.Player.Action_C.IsPressed() && !_but.Contains("C")) _but += "C";
-        if (playerControls.Player.Action_D.IsPressed() && !_but.Contains("D")) _but += "D";
-        if (playerControls.Player.Action_E.IsPressed() && !_but.Contains("E")) _but += "E";
+        if (inputs.actions["Action_A"].IsPressed() && !_but.Contains("A")) _but += "A";
+        if (inputs.actions["Action_B"].IsPressed() && !_but.Contains("B")) _but += "B";
+        if (inputs.actions["Action_C"].IsPressed() && !_but.Contains("C")) _but += "C";
+        if (inputs.actions["Action_D"].IsPressed() && !_but.Contains("D")) _but += "D";
+        if (inputs.actions["Action_E"].IsPressed() && !_but.Contains("E")) _but += "E";
 
-        if (playerControls.Player.Action_ABCD.IsPressed()) _but = "ABCD";
+        if (inputs.actions["Action_ABCD"].IsPressed()) _but = "ABCD";
 
         _input.button = _but;
 
@@ -805,7 +805,7 @@ public class GameWorldObject : MonoBehaviour
             return false;
 
 
-        if (!String.IsNullOrEmpty(_button))
+        if (!string.IsNullOrEmpty(_button))
         {
             if (!currInput.button.Contains(_button))
                 return false;

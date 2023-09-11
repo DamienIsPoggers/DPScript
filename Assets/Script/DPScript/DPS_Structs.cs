@@ -16,7 +16,16 @@ namespace DPScript
         public List<float> floatArgs = new List<float>();
         public List<bool> boolArgs = new List<bool>();
         public List<scriptCommand> commands = new List<scriptCommand>();
-        public DPS_MathTypes math;
+        public DPS_MathTypes math = DPS_MathTypes.equals;
+
+        public override string ToString()
+        {
+            return "Command: " + (DPS_CommandEnum)id + "\nString Count: " + stringArgs.Count +
+                "\nInt Count: " + intArgs.Count + "\nUInt Count: " + uintArgs.Count +
+                "\nByte Count: " + byteArgs.Count + "\nFloat Count: " + floatArgs.Count +
+                "\nBool Count: " + boolArgs.Count + "\nSub-Command Count: " + commands.Count +
+                "\nMath Type: " + math;
+        }
     }
 
     public class scriptEntry
@@ -152,6 +161,7 @@ namespace DPScript
         public byte attackType = 0;
         public byte holdBuffer = 0;
         public byte common = 0;
+        public uint maxComboUse = 1;
 
         public bool useSubroutine = false;
         public string subroutine;

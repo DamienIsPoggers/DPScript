@@ -115,6 +115,9 @@ namespace DPScript
                 case 60:
                     temp.args = new string[] { "1h", "1c", "1m", "1h", "1c" };
                     break;
+                case 99:
+                    temp.args = new string[] { "1u" };
+                    break;
                 case 100:
                     temp.args = new string[] { "1s" };
                     break;
@@ -192,6 +195,13 @@ namespace DPScript
                 case 132:
                     temp.args = new string[] { "1s", "1u", "1h", "1i" };
                     break;
+                case 133:
+                    temp.args = new string[] { "1i" };
+                    break;
+                case 134:
+                case 135:
+                    temp.args = new string[] { "3f" };
+                    break;
                 case 150:
                 case 151:
                 case 152:
@@ -245,6 +255,10 @@ namespace DPScript
                 case 190:
                 case 191:
                     temp.args = new string[] { "1i" };
+                    break;
+
+                case 300:
+                    temp.args = new string[] { "1s" };
                     break;
             }
 

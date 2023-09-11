@@ -2344,6 +2344,7 @@ MonoBehaviour:
   effectManager: {fileID: 0}
   meshParent: {fileID: 0}
   CollisionChild: {fileID: 0}
+  inputs: {fileID: 0}
   spriteChild: {fileID: 0}
   player: {fileID: 0}
   opponent: {fileID: 0}
@@ -2434,6 +2435,7 @@ MonoBehaviour:
     chargeTime: 0
     used: 0
   buffer: []
+  spriteMaterials: []
   walkingSpeed: a00f000048f4ffff
   dashSpeed: 701700009001000008200000
   defualtAirActionsCount: 010000000100000001000000
@@ -2472,12 +2474,14 @@ MonoBehaviour:
   comboIsValid: 1
   isInCombo: 0
   isInIf: 0
+  ifFailed: 0
   requestedLabel: -1
   isInUpon: 0
-  ifFailed: 0
   canElse: 0
   isInDebug: 1
   debugNoLoad: 0
+  logVar: -1
+  logHasUpon: -1
   initalized: 0
   ignoreInputs: 0
   generateColBox: 0
@@ -2766,6 +2770,7 @@ MonoBehaviour:
   effectManager: {fileID: 0}
   meshParent: {fileID: 0}
   CollisionChild: {fileID: 0}
+  inputs: {fileID: 0}
   spriteChild: {fileID: 0}
   player: {fileID: 0}
   opponent: {fileID: 0}
@@ -2858,6 +2863,7 @@ MonoBehaviour:
     chargeTime: 0
     used: 0
   buffer: []
+  spriteMaterials: []
   walkingSpeed: a00f000048f4ffff
   dashSpeed: 7017000090010000401f0000
   defualtAirActionsCount: 010000000100000001000000
@@ -2896,12 +2902,14 @@ MonoBehaviour:
   comboIsValid: 1
   isInCombo: 0
   isInIf: 0
+  ifFailed: 0
   requestedLabel: -1
   isInUpon: 0
-  ifFailed: 0
   canElse: 0
   isInDebug: 1
   debugNoLoad: 0
+  logVar: -1
+  logHasUpon: -1
   initalized: 0
   ignoreInputs: 1
   generateColBox: 0
@@ -3430,6 +3438,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaultController: {fileID: 9100000, guid: 1a54747c26017c544ab7cfa4d32d60a1, type: 2}
   cam: {fileID: 963194225}
+  maxNormalZoom: 3
   animOffset: {fileID: 1611701768}
 --- !u!1 &747494556
 GameObject:
@@ -4359,7 +4368,7 @@ MonoBehaviour:
   - {fileID: 1897725817}
   spriteCharacterOnScreen: 0
   showHitboxes: 0
-  stateWidth: 100000
+  stateWidth: 1000000
   players: []
   commonPlayer: {fileID: 0}
   collisions: []
@@ -31035,9 +31044,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   char1LoadPath: char/krt/krt_load
-  char2LoadPath: char/krt/krt_load
+  char2LoadPath: char/sol/sol_load
   char1LoadColor: 0
-  char2LoadColor: 1
+  char2LoadColor: 0
   playerSpawnPos: 150000
 --- !u!4 &1408766771
 Transform:

@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using DPScript;
 using DPScript.Loading;
+using UnityEngine.InputSystem;
 
 public class Objects_Load
 {
-    public static IEnumerator mainLoad(DPS_ObjectLoad load, int color, bool setNum = false, byte num = 0, int setPos = 0)
+    public static IEnumerator mainLoad(DPS_ObjectLoad load, int color, bool setNum = false, byte num = 0, int setPos = 0, InputDevice[] devices = null)
     {
-        GameObject character = Object.Instantiate(load.prefab);
+        GameObject character = PlayerInput.Instantiate(load.prefab, pairWithDevices: devices).gameObject;
         GameWorldObject o = character.GetComponent<GameWorldObject>();
 
         for(int i = 0; i < load.scriptLoad.Count; i++)
@@ -87,13 +88,18 @@ public class Objects_Load
             }
         }
         else
+        {
             o.spriteChild.material = Object.Instantiate(load.materials.mats[color].spriteMaterials[0]);
+            o.spriteMaterials.Add(o.spriteChild.material);
+            for (int i = 1; i < load.materials.mats[color].spriteMaterials.Count; i++)
+                o.spriteMaterials.Add(Object.Instantiate(load.materials.mats[color].spriteMaterials[i]));
+        }
 
         if (setNum)
         {
             o.playerNum = num;
             o.locX = setPos;
-            if (num == 2)
+            if (num == 1)
                 o.dir = ObjectDir.dir_Left;
         }
     }

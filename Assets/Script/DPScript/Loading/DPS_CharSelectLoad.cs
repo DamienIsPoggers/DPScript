@@ -10,6 +10,7 @@ namespace DPScript.Loading
         public GameObject prefab;
         public DPS_MatLoad mats;
         public bool faceCamera = false;
+        public bool isSprite = false;
         public List<AudioClip> idleLines = new List<AudioClip>(), selectedLines = new List<AudioClip>();
         public AudioClip announcerLine;
     }

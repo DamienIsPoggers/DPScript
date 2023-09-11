@@ -2,6 +2,7 @@ using DPScript.Loading;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace DPScript
 {
@@ -14,8 +15,10 @@ namespace DPScript
 
         void Awake()
         {
-            StartCoroutine(Objects_Load.mainLoad(Resources.Load<DPS_ObjectLoad>(char1LoadPath), char1LoadColor, true, 1, -playerSpawnPos));
-            StartCoroutine(Objects_Load.mainLoad(Resources.Load<DPS_ObjectLoad>(char2LoadPath), char2LoadColor, true, 2, playerSpawnPos));
+            StartCoroutine(Objects_Load.mainLoad(Resources.Load<DPS_ObjectLoad>(char1LoadPath), char1LoadColor, true, 0, -playerSpawnPos,
+                new InputDevice[] { Keyboard.current }));
+            StartCoroutine(Objects_Load.mainLoad(Resources.Load<DPS_ObjectLoad>(char2LoadPath), char2LoadColor, true, 1, playerSpawnPos,
+                new InputDevice[] { Gamepad.all[0] }));
         }
     }
 }

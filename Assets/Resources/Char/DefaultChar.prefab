@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 4812540240432884744}
   - component: {fileID: 7161926941035727508}
   - component: {fileID: 5889182882785440761}
+  - component: {fileID: 592843328251926646}
   m_Layer: 0
   m_Name: DefaultChar
   m_TagString: Untagged
@@ -91,6 +92,7 @@ MonoBehaviour:
   effectManager: {fileID: 7161926941035727508}
   meshParent: {fileID: 7411830682200192377}
   CollisionChild: {fileID: 3988485168466700231}
+  inputs: {fileID: 592843328251926646}
   spriteChild: {fileID: 477554907806686866}
   player: {fileID: 0}
   opponent: {fileID: 0}
@@ -174,6 +176,7 @@ MonoBehaviour:
     chargeTime: 0
     used: 0
   buffer: []
+  spriteMaterials: []
   walkingSpeed: a00f000048f4ffff
   dashSpeed: 701700009001000008200000
   defualtAirActionsCount: 010000000100000001000000
@@ -212,12 +215,14 @@ MonoBehaviour:
   comboIsValid: 1
   isInCombo: 0
   isInIf: 0
+  ifFailed: 0
   requestedLabel: -1
   isInUpon: 0
-  ifFailed: 0
   canElse: 0
   isInDebug: 0
   debugNoLoad: 0
+  logVar: -1
+  logHasUpon: -1
   initalized: 0
   ignoreInputs: 0
   generateColBox: 0
@@ -289,6 +294,36 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &592843328251926646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2133903191056173196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Actions: {fileID: -944628639613478452, guid: 2f713b6fda55f69469fa0f7c562f25e7, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: Player
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
 --- !u!1 &3988485168466700231
 GameObject:
   m_ObjectHideFlags: 0

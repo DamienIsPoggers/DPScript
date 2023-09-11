@@ -46,6 +46,7 @@ namespace DPScript
         ID_cameraFocusDelay = 53,
         ID_cameraFocusZoom = 54,
         ID_doMath = 60,
+        ID_stateMaxComboUse = 99,
         ID_stateRegister = 100,
         ID_stateConditions = 101,
         ID_stateInput = 102,
@@ -79,6 +80,9 @@ namespace DPScript
         ID_setAnimSpeed = 130,
         ID_setSpriteIf = 131,
         ID_setSpriteIfNot = 132,
+        ID_setSpriteMaterial = 133,
+        ID_setSpriteOffset = 134,
+        ID_setMeshOffset = 135,
         ID_attackDamage = 150,
         ID_attackPushbackX = 151,
         ID_attackPushbackY = 152,
@@ -101,5 +105,6 @@ namespace DPScript
         ID_attackRefreshHit = 169,
         ID_addToComboCounter = 190,
         ID_addToComboCounterOnHit = 191,
+        ID_log_String = 300,
     }
 }

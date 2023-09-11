@@ -19,6 +19,7 @@ public class CameraManager : MonoBehaviour
     float camZoom = 1f;
     byte camZoomTime = 0, camZoomReturnTimer = 0;
     Vector3 focusPos;
+    public int maxNormalZoom = 350000;
 
     [SerializeField]
     Transform animOffset;
