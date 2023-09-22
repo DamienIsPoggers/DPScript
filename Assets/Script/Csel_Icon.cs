@@ -1,8 +1,8 @@
 using DPScript.Loading;
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
+[Serializable]
 public class Csel_Icon : MonoBehaviour
 {
     public DPS_CharacterDefinition charDef;

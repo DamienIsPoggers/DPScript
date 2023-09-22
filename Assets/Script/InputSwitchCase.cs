@@ -24,6 +24,10 @@ public class InputSwitchCase
                 return new byte[] { 2, 3, 6, 2, 3, 6 };
             case 18:
                 return new byte[] { 2, 1, 4, 2, 1, 4 };
+            case 19:
+                return new byte[] { 6, 3, 2, 1, 4 };
+            case 20:
+                return new byte[] { 4, 1, 2, 3, 6 };
             case 44:
                 return new byte[] { 4, 4 };
             case 66:

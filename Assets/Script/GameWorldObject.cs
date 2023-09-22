@@ -40,9 +40,7 @@ public class GameWorldObject : MonoBehaviour
     public string curState = "", lastState = "", nextState = "", landingState = "";
     public bool landToState = false;
     public string curCollision = "", lastCollision = "", lerpCollision = "";
-    public int locX = 0, locY = 0, locZ = 0; 
-    public int xImpulse = 0, yImpulse = 0, zImpulse = 0;
-    public int xImpulseAdd = 0, yImpulseAdd = 0, zImpulseAdd = 0;
+    public Vector3Int loc = Vector3Int.zero, impulse = Vector3Int.zero, impulseAdd = Vector3Int.zero;
     public bool isInHKD = false;
     public int HKDtimer = 0;
     public bool transferMomentum = false;
@@ -161,6 +159,8 @@ public class GameWorldObject : MonoBehaviour
     public Vector3 airealColPos = Vector3.zero;
     public Vector3 airealColSize = Vector3.zero;
 
+    public const float oneTwelth = 1f / 12f;
+
     public void recallAwake()
     {
         Awake();
@@ -168,7 +168,7 @@ public class GameWorldObject : MonoBehaviour
 
     private void Awake()
     {
-        cameraMain = GameObject.Find("Main Camera").GetComponent<Transform>();
+        cameraMain = CameraManager.Instance.transform;
         //GameObject temp = transform.Find("Meshes").gameObject;
 
         for (int i = 0; i < armatureList.Count; i++)
@@ -195,16 +195,6 @@ public class GameWorldObject : MonoBehaviour
         for (int i = 0; i < Battle_Manager.Instance.stages.Count; i++)
             world.Add(Battle_Manager.Instance.stages[i].id, Battle_Manager.Instance.stages[i]);
         Battle_Manager.Instance.players.Add(this); 
-    }
-
-    private void OnEnable()
-    {
-        
-    }
-
-    private void OnDisable()
-    {
-        
     }
 
     private void FixedUpdate()
@@ -279,7 +269,7 @@ public class GameWorldObject : MonoBehaviour
         {
             hitstun--;
             if (hitstun == 0)
-            { xImpulse = 0; xImpulseAdd = 0; zImpulse = 0; zImpulseAdd = 0; }
+            { impulse.x = 0; impulseAdd.x = 0; impulse.z = 0; impulseAdd.z = 0; }
             globalVariables[18] = hitstun;
         }
 
@@ -335,8 +325,6 @@ public class GameWorldObject : MonoBehaviour
             { DPS_ObjectCommand.enterState(nextState, this); continue; }
 
             DPS_ObjectCommand.objSwitchCase(states[curState].commands[scriptPos], this);
-            if (requestedLabel >= 0 && isInIf <= 0)
-                DPS_ObjectCommand.sendToLabel((uint)requestedLabel, this);
 
             if (switchingState)
                 continue;
@@ -376,7 +364,7 @@ public class GameWorldObject : MonoBehaviour
                 loadedCollisions.Add(temp);
                 Battle_Manager.Instance.collisions.Add(temp);
             }
-            if (!collisionEntry.containsBoxType(collisions[curCollision], 0) && generateColBox)
+            if (generateColBox && !collisionEntry.containsBoxType(collisions[curCollision], 0))
             {
                 GameObject col = new GameObject();
                 col.transform.position = transform.position;
@@ -417,13 +405,13 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].Play(stateId, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
+                    armatures[armatureList[i]].Play(stateId, 0, (float)frame * oneTwelth / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 0f;
                 }
             }
         else if(spriteAnimator.HasState(0, stateId))
         {
-            spriteAnimator.Play(stateId, 0, (float)frame * (1f/12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
+            spriteAnimator.Play(stateId, 0, (float)frame * oneTwelth / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
             spriteAnimator.speed = 0f;
         }
     }
@@ -439,13 +427,13 @@ public class GameWorldObject : MonoBehaviour
             {
                 if (armatures[armatureList[i]].HasState(0, stateId) && renderers[armatureList[i]].enabled)
                 {
-                    armatures[armatureList[i]].CrossFade(stateId, 1, 0, (float)frame * (1f / 12f) / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
+                    armatures[armatureList[i]].CrossFade(stateId, 1, 0, (float)frame * oneTwelth / armatures[armatureList[i]].GetCurrentAnimatorClipInfo(0)[0].clip.length);
                     armatures[armatureList[i]].speed = 1;
                 }
             }
         else if (spriteAnimator.HasState(0, stateId))
         {
-            spriteAnimator.Play(stateId, 0, (float)frame * (1f / 12f) / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
+            spriteAnimator.Play(stateId, 0, (float)frame * oneTwelth / spriteAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length);
             spriteAnimator.speed = 1f;
         }
     }
@@ -484,14 +472,14 @@ public class GameWorldObject : MonoBehaviour
             else
                 locX += xImpulse * dir;
             */
-            locX += xImpulse * (int)dir;
-            locY += yImpulse; locZ += zImpulse;
-            xImpulse += xImpulseAdd; yImpulse += yImpulseAdd; zImpulse += zImpulseAdd;
+            loc.x += impulse.x * (int)dir;
+            loc.x += impulse.y; loc.z += impulse.z;
+            impulse.x += impulseAdd.x; impulse.y += impulseAdd.y; impulse.z += impulseAdd.z;
             if(hasWallCollision)
-                if(Mathf.Abs(locX) > Battle_Manager.Instance.stateWidth)
+                if(Mathf.Abs(loc.x) > Battle_Manager.Instance.stateWidth)
                 {
-                    int side = (int)Mathf.Sign(locX);
-                    locX = Battle_Manager.Instance.stateWidth * side;
+                    int side = (int)Mathf.Sign(loc.x);
+                    loc.x = Battle_Manager.Instance.stateWidth * side;
                 }
             /*
                 else if(Mathf.Abs(distance) > CameraManager.Instance.maxNormalZoom)
@@ -504,29 +492,29 @@ public class GameWorldObject : MonoBehaviour
 
         if(hitstun > 0)
         {
-            xImpulseAdd -= xImpulseAdd / 5; zImpulseAdd -= zImpulseAdd / 5;
-            if((xImpulseAdd < 0 && xImpulse <= 0) || (xImpulseAdd > 0 && xImpulse >= 0))
-            { xImpulse = 0; xImpulseAdd = 0; zImpulse = 0; zImpulseAdd = 0; }
+            impulseAdd.x -= impulseAdd.x / 5; impulseAdd.z -= impulseAdd.z / 5;
+            if((impulseAdd.x < 0 && impulse.x <= 0) || (impulseAdd.x > 0 && impulse.x >= 0))
+            { impulse.x = 0; impulseAdd.x = 0; impulse.z = 0; impulseAdd.z = 0; }
         }
 
-        if(locY <= 0)
+        if(loc.y <= 0)
         {
-            locY = 0;
-            yImpulse = 0;
-            yImpulseAdd = 0;
+            loc.y = 0;
+            impulse.y = 0;
+            impulseAdd.y = 0;
             triggerUpon(2);
             if(landToState)
                 DPS_ObjectCommand.enterState(landingState, this);
         }
 
-        globalVariables[14] = locX;
-        globalVariables[15] = locY;
-        globalVariables[16] = locZ; 
-        globalVariables[22] = xImpulse;
-        globalVariables[23] = yImpulse;
-        globalVariables[24] = zImpulse;
+        globalVariables[14] = loc.x;
+        globalVariables[15] = loc.y;
+        globalVariables[16] = loc.z; 
+        globalVariables[22] = impulse.x;
+        globalVariables[23] = impulse.y;
+        globalVariables[24] = impulse.z;
 
-        transform.localPosition = new Vector3((float)locX / 100000, (float)locY / 100000, (float)locZ / 100000);
+        transform.localPosition = new Vector3((float)loc.x / 100000, (float)loc.y / 100000, (float)loc.z / 100000);
     }
 
     private void scaleUpdate()
@@ -622,16 +610,16 @@ public class GameWorldObject : MonoBehaviour
             {
                 DPS_ObjectCommand.enterState(hitstunAnims[attacker.hitAnims[stateType]], this);
                 curHealth -= attacker.damage; 
-                xImpulse = attacker.pushBackX;
-                xImpulseAdd = attacker.friction;
+                impulse.x = attacker.pushBackX;
+                impulseAdd.x = attacker.friction;
                 if (stateType == 2 || attacker.launchOpponent)
                 {
-                    yImpulse = attacker.pushBackY;
-                    yImpulseAdd = attacker.hitGravity;
+                    impulse.y = attacker.pushBackY;
+                    impulseAdd.y = attacker.hitGravity;
                 }
-                zImpulse = attacker.pushBackZ;
-                if (zImpulse != 0)
-                    zImpulseAdd = attacker.friction;
+                impulse.z = attacker.pushBackZ;
+                if (impulse.z != 0)
+                    impulseAdd.z = attacker.friction;
                 hitstun = attacker.attackHitstun;
                 globalVariables[18] = hitstun;
                 rest = false;
@@ -645,7 +633,7 @@ public class GameWorldObject : MonoBehaviour
 
     public int getAbsoluteDistance(GameWorldObject p1, GameWorldObject p2)
     {
-        return p2.locX - p1.locX;
+        return p2.loc.x - p1.loc.x;
     }
 
     #region inputs
@@ -940,22 +928,22 @@ public class GameWorldObject : MonoBehaviour
         DPS_ObjectCommand.createVar(0, 11, jumpSpeed[1], this);
         DPS_ObjectCommand.createVar(0, 12, jumpSpeed[2], this);
         DPS_ObjectCommand.createVar(0, 13, defaultGravity, this);
-        DPS_ObjectCommand.createVar(0, 14, locX, this);
-        DPS_ObjectCommand.createVar(0, 15, locY, this);
-        DPS_ObjectCommand.createVar(0, 16, locZ, this);
+        DPS_ObjectCommand.createVar(0, 14, loc.x, this);
+        DPS_ObjectCommand.createVar(0, 15, loc.y, this);
+        DPS_ObjectCommand.createVar(0, 16, loc.z, this);
         DPS_ObjectCommand.createVar(0, 18, hitstun, this);
         DPS_ObjectCommand.createVar(0, 19, (int)untechTime[0], this);
         DPS_ObjectCommand.createVar(0, 20, (int)untechTime[1], this);
         DPS_ObjectCommand.createVar(0, 21, HKDtimer, this);
-        DPS_ObjectCommand.createVar(0, 22, xImpulse, this);
-        DPS_ObjectCommand.createVar(0, 23, yImpulse, this);
-        DPS_ObjectCommand.createVar(0, 24, zImpulse, this);
+        DPS_ObjectCommand.createVar(0, 22, impulse.x, this);
+        DPS_ObjectCommand.createVar(0, 23, impulse.y, this);
+        DPS_ObjectCommand.createVar(0, 24, impulse.z, this);
     }
 
     private void kill()
     {
-        foreach (Object_Collision col in loadedCollisions)
-            col.kill();
+        while (loadedCollisions.Count > 0)
+            loadedCollisions[0].kill();
         Destroy(gameObject);
         Destroy(meshParent);
         Destroy(CollisionChild);

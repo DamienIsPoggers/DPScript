@@ -11,11 +11,14 @@ public class Csel_Controller : MonoBehaviour
 
     void Start()
     {
-        
+        controllerNum = CharacterSelect.Instance.controllersAdded;
+        CharacterSelect.Instance.controllersAdded++;
     }
 
     void Update()
     {
-        
+        Vector2Int move = new Vector2Int(Mathf.RoundToInt(input.actions["Move"].ReadValue<Vector2>().x),
+            Mathf.RoundToInt(input.actions["Move"].ReadValue<Vector2>().y));
+        CharacterSelect.Instance.inputUpdate(move, input.actions["Accept"].IsPressed(), input.actions["Close"].IsPressed(), controllerNum);
     }
 }

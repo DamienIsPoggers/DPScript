@@ -21,7 +21,7 @@ namespace DPScript
             effectSpawner = transform.Find("Effects").gameObject;
         }
 
-        void Update()
+        void FixedUpdate()
         {
             for(int i = 0; i < effectsSpawned.Count; i++)
             {

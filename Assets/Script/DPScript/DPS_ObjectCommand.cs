@@ -421,12 +421,12 @@ namespace DPScript
             o.uponStatements.Clear();
             if(!o.transferMomentum)
             {
-                o.xImpulse = 0;
-                o.yImpulse = 0;
-                o.zImpulse = 0;
-                o.xImpulseAdd = 0;
-                o.yImpulseAdd = 0;
-                o.zImpulseAdd = 0;
+                o.impulse.x = 0;
+                o.impulse.y = 0;
+                o.impulse.z = 0;
+                o.impulseAdd.x = 0;
+                o.impulseAdd.y = 0;
+                o.impulseAdd.z = 0;
             }
             o.transferMomentum = false;
             o.momentumPause = false;
@@ -454,9 +454,9 @@ namespace DPScript
             DPS_AudioManager aud = obj.audioManager;
             aud.soundList = o.audioManager.soundList;
             aud.soundNames = o.audioManager.soundNames;
-            obj.locX = o.locX + offsetX;
-            obj.locY = o.locY + offsetY;
-            obj.locZ = o.locZ;
+            obj.loc.x = o.loc.x + offsetX;
+            obj.loc.y = o.loc.y + offsetY;
+            obj.loc.z = o.loc.z;
             obj.rotation = o.rotation;
             obj.scale = o.rotation;
             obj.states = o.states;
@@ -611,13 +611,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.xImpulse = amount;
+                    o.impulse.x = amount;
                     break;
                 case 0:
-                    o.xImpulse = o.tempVariables[amount];
+                    o.impulse.x = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.xImpulse = o.globalVariables[amount];
+                    o.impulse.x = o.globalVariables[amount];
                     break;
             }
         }
@@ -627,13 +627,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.yImpulse = amount;
+                    o.impulse.y = amount;
                     break;
                 case 0:
-                    o.yImpulse = o.tempVariables[amount];
+                    o.impulse.y = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.yImpulse = o.globalVariables[amount];
+                    o.impulse.y = o.globalVariables[amount];
                     break;
             }
         }
@@ -643,13 +643,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.zImpulse = amount;
+                    o.impulse.z = amount;
                     break;
                 case 0:
-                    o.zImpulse = o.tempVariables[amount];
+                    o.impulse.z = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.zImpulse = o.globalVariables[amount];
+                    o.impulse.z = o.globalVariables[amount];
                     break;
             }
         }
@@ -659,13 +659,13 @@ namespace DPScript
             switch(type)
             {
                 case 3:
-                    o.xImpulseAdd = amount;
+                    o.impulseAdd.x = amount;
                     break;
                 case 0:
-                    o.xImpulseAdd = o.tempVariables[amount];
+                    o.impulseAdd.x = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.xImpulseAdd = o.globalVariables[amount];
+                    o.impulseAdd.x = o.globalVariables[amount];
                     break;
             }
         }
@@ -675,13 +675,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.yImpulseAdd = amount;
+                    o.impulseAdd.y = amount;
                     break;
                 case 0:
-                    o.yImpulseAdd = o.tempVariables[amount];
+                    o.impulseAdd.y = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.yImpulseAdd = o.globalVariables[amount];
+                    o.impulseAdd.y = o.globalVariables[amount];
                     break;
             }
         }
@@ -691,13 +691,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.zImpulseAdd = amount;
+                    o.impulseAdd.z = amount;
                     break;
                 case 0:
-                    o.zImpulseAdd = o.tempVariables[amount];
+                    o.impulseAdd.z = o.tempVariables[amount];
                     break;
                 case 1:
-                    o.zImpulseAdd = o.globalVariables[amount];
+                    o.impulseAdd.z = o.globalVariables[amount];
                     break;
             }
         }
@@ -707,13 +707,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locX += amount * (int)o.dir;
+                    o.loc.x += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locX += o.tempVariables[amount] * (int)o.dir;
+                    o.loc.x += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locX += o.globalVariables[amount] * (int)o.dir;
+                    o.loc.x += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
@@ -723,13 +723,13 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locY += amount * (int)o.dir;
+                    o.loc.y += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locY += o.tempVariables[amount] * (int)o.dir;
+                    o.loc.y += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locY += o.globalVariables[amount] * (int)o.dir;
+                    o.loc.y += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
@@ -739,20 +739,20 @@ namespace DPScript
             switch (type)
             {
                 case 3:
-                    o.locZ += amount * (int)o.dir;
+                    o.loc.z += amount * (int)o.dir;
                     break;
                 case 0:
-                    o.locZ += o.tempVariables[amount] * (int)o.dir;
+                    o.loc.z += o.tempVariables[amount] * (int)o.dir;
                     break;
                 case 1:
-                    o.locZ += o.globalVariables[amount] * (int)o.dir;
+                    o.loc.z += o.globalVariables[amount] * (int)o.dir;
                     break;
             }
         }
 
         public static int getDistance(GameWorldObject other, GameWorldObject o)
         {
-            return other.locX - o.locX;
+            return other.loc.x - o.loc.x;
         }
 
         public static int doMath(scriptCommand com, GameWorldObject o)
@@ -1177,6 +1177,9 @@ namespace DPScript
             if(o.ifFailed > 0)
                 o.ifFailed--;
             o.isInIf--;
+
+            if (o.isInIf == 0 && o.requestedLabel > -1)
+                sendToLabel((uint)o.requestedLabel, o);
         }
 
         #endregion
